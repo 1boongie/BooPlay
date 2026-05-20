@@ -66,16 +66,15 @@ Before you begin, make sure you have the following installed:
    ```
    Then, copy and paste the SQL from the migration files (e.g. `website/drizzle/0000_crazy_bloodstrike.sql`).
 
-4. **Configure Google OAuth**
+4. **Configure Discord OAuth**
 
-   - Go to [Google Auth Platform dashboard](https://console.cloud.google.com/auth/clients)
+   - Go to [Discord developer portal](https://discord.com/developers/applications)
    - Create a new client:
      - Application type: "Web application"
      - Name: Your choice
-     - Authorized JavaScript origins: Can be left empty
      - Authorized redirect URIs:
-       - http://localhost:3002/api/auth/callback/google
-       - http://localhost:5173/api/auth/callback/google
+       - http://localhost:3002/api/auth/callback/discord
+       - http://localhost:5173/api/auth/callback/discord
        - Production URL
 
 5. **Configure Environment Variables**
@@ -101,9 +100,9 @@ Before you begin, make sure you have the following installed:
    PRIVATE_BETTER_AUTH_SECRET=your_secret_here   # Any alphanumeric string for session encryption
    PUBLIC_BETTER_AUTH_URL=http://localhost:5173  # For development, use http://localhost:5173. For production, use http://localhost:3002
 
-   # --- Google OAuth ---
-   GOOGLE_CLIENT_ID=your_google_client_id
-   GOOGLE_CLIENT_SECRET=your_google_client_secret
+   # --- Discord OAuth ---
+   DISCORD_CLIENT_ID=your_discord_client_id
+   DISCORD_CLIENT_SECRET=your_discord_client_secret
 
    # --- Websocket ---
    PUBLIC_WEBSOCKET_URL=ws://localhost:8080      # URL of the websocket server
@@ -112,14 +111,6 @@ Before you begin, make sure you have the following installed:
    AWS_ACCESS_KEY_ID=your_aws_access_key
    AWS_SECRET_ACCESS_KEY=your_aws_secret_key
    AWS_REGION=us-east-1
-
-   # --- Optional: Polar.sh (for gem purchases / payments) ---
-   POLAR_ACCESS_TOKEN=your_polar_access_token           # API token from Polar.sh dashboard
-   POLAR_WEBHOOK_SECRET=your_polar_webhook_secret       # Webhook secret from Polar.sh
-   PUBLIC_POLAR_PRODUCT_GEMS_500=your_product_id_500    # Polar product ID for 500 gems
-   PUBLIC_POLAR_PRODUCT_GEMS_1300=your_product_id_1300  # Polar product ID for 1300 gems
-   PUBLIC_POLAR_PRODUCT_GEMS_2800=your_product_id_2800  # Polar product ID for 2800 gems
-   PUBLIC_POLAR_PRODUCT_GEMS_8000=your_product_id_8000  # Polar product ID for 8000 gems
 
    # --- Optional: OpenRouter (for AI features) ---
    OPENROUTER_API_KEY=your_openrouter_api_key

@@ -29,7 +29,7 @@
 	import { volumeSettings } from '$lib/stores/volume-settings';
 	import { playSound, showConfetti, showSchoolPrideCannons } from '$lib/utils';
 
-	const loadingPackage = $state<string | null>(null);
+	let loadingPackage = $state<string | null>(null);
 	let showSuccessModal = $state(false);
 
 	let confirmTier = $state<CrateTierId | null>(null);

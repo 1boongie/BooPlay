@@ -1,91 +1,86 @@
 <script lang="ts">
-import {
-	Activity01Icon,
-	Alert02Icon,
-	ArrowDown01Icon,
-	ArrowRight01Icon,
-	Key01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/svelte";
-import { toast } from "svelte-sonner";
-import Codeblock from "$lib/components/self/Codeblock.svelte";
-import SignInConfirmDialog from "$lib/components/self/SignInConfirmDialog.svelte";
-import { Alert, AlertDescription } from "$lib/components/ui/alert";
-import { Button } from "$lib/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardHeader,
-	CardTitle,
-} from "$lib/components/ui/card";
-import * as Collapsible from "$lib/components/ui/collapsible";
-import { Progress } from "$lib/components/ui/progress";
-import { USER_DATA } from "$lib/stores/user-data";
+	import {
+		Activity01Icon,
+		Alert02Icon,
+		ArrowDown01Icon,
+		ArrowRight01Icon,
+		Key01Icon
+	} from '@hugeicons/core-free-icons';
+	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import { toast } from 'svelte-sonner';
+	import Codeblock from '$lib/components/self/Codeblock.svelte';
+	import SignInConfirmDialog from '$lib/components/self/SignInConfirmDialog.svelte';
+	import { Alert, AlertDescription } from '$lib/components/ui/alert';
+	import { Button } from '$lib/components/ui/button';
+	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import * as Collapsible from '$lib/components/ui/collapsible';
+	import { Progress } from '$lib/components/ui/progress';
+	import { USER_DATA } from '$lib/stores/user-data';
 
-const { data } = $props();
-let apiKey = $state(null);
-let apiKeyId = $state<string | null>(data.apiKey?.id || null);
-let justCreated = $state(false);
-let credits = $state(data.apiKey?.remaining || 0);
-const todayUsage = $state(data.todayUsage || 0);
-const shouldSignIn = $state(false);
+	const { data } = $props();
+	let apiKey = $state(null);
+	let apiKeyId = $state<string | null>(data.apiKey?.id || null);
+	let justCreated = $state(false);
+	let credits = $state(data.apiKey?.remaining || 0);
+	let todayUsage = $state(data.todayUsage || 0);
+	let shouldSignIn = $state(false);
 
-const maxDailyRequests = 2000;
-const usagePercentage = $derived((todayUsage / maxDailyRequests) * 100);
+	const maxDailyRequests = 2000;
+	const usagePercentage = $derived((todayUsage / maxDailyRequests) * 100);
 
-let loading = $state(false);
+	let loading = $state(false);
 
-// State for collapsible sections
-const authOpen = $state(false);
-const topCoinsOpen = $state(false);
-const marketDataOpen = $state(false);
-const coinDetailsOpen = $state(false);
-const holdersOpen = $state(false);
-const hopiumOpen = $state(false);
-const hopiumDetailsOpen = $state(false);
-const rateLimitingOpen = $state(false);
-const errorResponsesOpen = $state(false);
+	// State for collapsible sections
+	let authOpen = $state(false);
+	let topCoinsOpen = $state(false);
+	let marketDataOpen = $state(false);
+	let coinDetailsOpen = $state(false);
+	let holdersOpen = $state(false);
+	let hopiumOpen = $state(false);
+	let hopiumDetailsOpen = $state(false);
+	let rateLimitingOpen = $state(false);
+	let errorResponsesOpen = $state(false);
 
-async function createKey() {
-	loading = true;
-	try {
-		const response = await fetch("/api/keys", {
-			method: "POST",
-		});
-		if (!response.ok) throw new Error("Failed to create key");
-		const { id, key, remaining } = await response.json();
-		apiKeyId = id;
-		apiKey = key;
-		credits = remaining;
+	async function createKey() {
+		loading = true;
+		try {
+			const response = await fetch('/api/keys', {
+				method: 'POST'
+			});
+			if (!response.ok) throw new Error('Failed to create key');
+			const { id, key, remaining } = await response.json();
+			apiKeyId = id;
+			apiKey = key;
+			credits = remaining;
 
-		justCreated = true;
-		toast.success("API key created");
-	} catch (err) {
-		toast.error("Failed to create API key");
-	} finally {
-		loading = false;
+			justCreated = true;
+			toast.success('API key created');
+		} catch (err) {
+			toast.error('Failed to create API key');
+		} finally {
+			loading = false;
+		}
 	}
-}
 
-async function regenerateKey() {
-	loading = true;
-	try {
-		const response = await fetch(`/api/keys/${apiKeyId}/regenerate`, {
-			method: "POST",
-		});
-		if (!response.ok) throw new Error("Failed to regenerate key");
-		const { id, key, remaining } = await response.json();
-		apiKeyId = id;
-		apiKey = key;
-		credits = remaining;
-		justCreated = true;
-		toast.success("API key regenerated");
-	} catch (err) {
-		toast.error("Failed to regenerate key");
-	} finally {
-		loading = false;
+	async function regenerateKey() {
+		loading = true;
+		try {
+			const response = await fetch(`/api/keys/${apiKeyId}/regenerate`, {
+				method: 'POST'
+			});
+			if (!response.ok) throw new Error('Failed to regenerate key');
+			const { id, key, remaining } = await response.json();
+			apiKeyId = id;
+			apiKey = key;
+			credits = remaining;
+			justCreated = true;
+			toast.success('API key regenerated');
+		} catch (err) {
+			toast.error('Failed to regenerate key');
+		} finally {
+			loading = false;
+		}
 	}
-}
 </script>
 
 <SignInConfirmDialog bind:open={shouldSignIn} />

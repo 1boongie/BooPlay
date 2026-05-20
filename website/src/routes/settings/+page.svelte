@@ -1,400 +1,384 @@
 <script lang="ts">
-import {
-	ArrowLeft01Icon,
-	ArrowRight01Icon,
-	Clock,
-	Delete01Icon,
-	Down,
-	Download01Icon,
-	Tick01Icon,
-	VolumeHighIcon,
-	VolumeMute01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/svelte";
-import { Select } from "bits-ui";
-import { onDestroy, onMount } from "svelte";
-import { toast } from "svelte-sonner";
-import { browser } from "$app/environment";
-import { invalidateAll } from "$app/navigation";
-import SEO from "$lib/components/self/SEO.svelte";
-import * as Avatar from "$lib/components/ui/avatar";
-import { Button } from "$lib/components/ui/button";
-import * as Card from "$lib/components/ui/card";
-import * as Dialog from "$lib/components/ui/dialog";
-import { Input } from "$lib/components/ui/input";
-import { Label } from "$lib/components/ui/label";
-import * as Pagination from "$lib/components/ui/pagination";
-import { Slider } from "$lib/components/ui/slider";
-import { Switch } from "$lib/components/ui/switch";
-import { Textarea } from "$lib/components/ui/textarea";
-import { MAX_FILE_SIZE } from "$lib/data/constants";
-import { haptic } from "$lib/stores/haptics";
-import { USER_DATA } from "$lib/stores/user-data";
-import { volumeSettings } from "$lib/stores/volume-settings";
-import { debounce, getPublicUrl } from "$lib/utils";
-import { formatTimezone, timezoneList } from "$lib/utils/timezones";
+	import {
+		ArrowLeft01Icon,
+		ArrowRight01Icon,
+		Clock,
+		Delete01Icon,
+		Down,
+		Download01Icon,
+		Tick01Icon,
+		VolumeHighIcon,
+		VolumeMute01Icon
+	} from '@hugeicons/core-free-icons';
+	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import { Select } from 'bits-ui';
+	import { onDestroy, onMount } from 'svelte';
+	import { toast } from 'svelte-sonner';
+	import { browser } from '$app/environment';
+	import { invalidateAll } from '$app/navigation';
+	import SEO from '$lib/components/self/SEO.svelte';
+	import * as Avatar from '$lib/components/ui/avatar';
+	import { Button } from '$lib/components/ui/button';
+	import * as Card from '$lib/components/ui/card';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
+	import * as Pagination from '$lib/components/ui/pagination';
+	import { Slider } from '$lib/components/ui/slider';
+	import { Switch } from '$lib/components/ui/switch';
+	import { Textarea } from '$lib/components/ui/textarea';
+	import { MAX_FILE_SIZE } from '$lib/data/constants';
+	import { haptic } from '$lib/stores/haptics';
+	import { USER_DATA } from '$lib/stores/user-data';
+	import { volumeSettings } from '$lib/stores/volume-settings';
+	import { debounce, getPublicUrl } from '$lib/utils';
+	import { formatTimezone, timezoneList } from '$lib/utils/timezones';
 
-const shouldSignIn = $state(false);
-const name = $state($USER_DATA?.name || "");
-const bio = $state($USER_DATA?.bio ?? "");
-const username = $state($USER_DATA?.username || "");
-const timezone = $state($USER_DATA?.timezone?.toString() || "0");
-console.log($USER_DATA);
-const initialUsername = $USER_DATA?.username || "";
-let avatarFile: FileList | undefined = $state(undefined);
+	let shouldSignIn = $state(false);
+	let name = $state($USER_DATA?.name || '');
+	let bio = $state($USER_DATA?.bio ?? '');
+	let username = $state($USER_DATA?.username || '');
+	let timezone = $state($USER_DATA?.timezone?.toString() || '0');
+	const initialUsername = $USER_DATA?.username || '';
+	let avatarFile: FileList | undefined = $state(undefined);
 
-let previewUrl: string | null = $state(null);
-const currentAvatarUrl = $derived(
-	previewUrl || getPublicUrl($USER_DATA?.image ?? null),
-);
+	let previewUrl: string | null = $state(null);
+	const currentAvatarUrl = $derived(previewUrl || getPublicUrl($USER_DATA?.image ?? null));
 
-let nameError = $state("");
+	let nameError = $state('');
 
-const isDirty = $derived(
-	name !== ($USER_DATA?.name || "") ||
-		bio !== ($USER_DATA?.bio ?? "") ||
-		username !== ($USER_DATA?.username || "") ||
-		avatarFile !== undefined ||
-		+timezone !== ($USER_DATA?.timezone || 0),
-);
+	const isDirty = $derived(
+		name !== ($USER_DATA?.name || '') ||
+			bio !== ($USER_DATA?.bio ?? '') ||
+			username !== ($USER_DATA?.username || '') ||
+			avatarFile !== undefined ||
+			+timezone !== ($USER_DATA?.timezone || 0)
+	);
 
-const fileInput: HTMLInputElement | undefined = $state(undefined);
+	let fileInput: HTMLInputElement | undefined = $state(undefined);
 
-let loading = $state(false);
-let usernameAvailable: boolean | null = $state(null);
-let checkingUsername = $state(false);
-let masterVolume = $state(($USER_DATA?.volumeMaster || 0) * 100);
-let isMuted = $state($USER_DATA?.volumeMuted || false);
+	let loading = $state(false);
+	let usernameAvailable: boolean | null = $state(null);
+	let checkingUsername = $state(false);
+	let masterVolume = $state(($USER_DATA?.volumeMaster || 0) * 100);
+	let isMuted = $state($USER_DATA?.volumeMuted || false);
 
-let deleteDialogOpen = $state(false);
-let deleteConfirmationText = $state("");
-let isDeleting = $state(false);
-let isDownloading = $state(false);
-let disableMentions = $state($USER_DATA?.disableMentions || false);
+	let deleteDialogOpen = $state(false);
+	let deleteConfirmationText = $state('');
+	let isDeleting = $state(false);
+	let isDownloading = $state(false);
+	let disableMentions = $state($USER_DATA?.disableMentions || false);
 
-// Blocked users state
-let blockedUsers = $state<
-	Array<{
-		id: number;
-		blockedId: number;
-		username: string;
-		name: string;
-		image: string | null;
-		createdAt: string;
-	}>
->([]);
-let blockedLoading = $state(false);
-let unblockingUser = $state<string | null>(null);
-const blockedPage = $state(1);
-const blockedPerPage = 10;
-const blockedTotalPages = $derived(
-	Math.ceil(blockedUsers.length / blockedPerPage),
-);
-const paginatedBlocked = $derived(
-	blockedUsers.slice(
-		(blockedPage - 1) * blockedPerPage,
-		blockedPage * blockedPerPage,
-	),
-);
+	// Blocked users state
+	let blockedUsers = $state<
+		Array<{
+			id: number;
+			blockedId: number;
+			username: string;
+			name: string;
+			image: string | null;
+			createdAt: string;
+		}>
+	>([]);
+	let blockedLoading = $state(false);
+	let unblockingUser = $state<string | null>(null);
+	let blockedPage = $state(1);
+	const blockedPerPage = 10;
+	const blockedTotalPages = $derived(Math.ceil(blockedUsers.length / blockedPerPage));
+	const paginatedBlocked = $derived(
+		blockedUsers.slice((blockedPage - 1) * blockedPerPage, blockedPage * blockedPerPage)
+	);
 
-async function loadBlockedUsers() {
-	blockedLoading = true;
-	try {
-		const res = await fetch("/api/settings/blocked");
-		if (res.ok) {
-			const data = await res.json();
-			blockedUsers = data.blocks ?? [];
-		} else {
-			toast.error("Failed to load blocked users");
-		}
-	} catch {
-		toast.error("Failed to load blocked users");
-	}
-	blockedLoading = false;
-}
-
-async function unblockUser(username: string) {
-	unblockingUser = username;
-	try {
-		const res = await fetch(`/api/user/${username}/block`, {
-			method: "DELETE",
-		});
-		if (res.ok) {
-			blockedUsers = blockedUsers.filter((b) => b.username !== username);
-			toast.success(`Unblocked @${username}`);
-		} else {
-			toast.error("Failed to unblock user");
-		}
-	} catch {
-		toast.error("Failed to unblock user");
-	}
-	unblockingUser = null;
-}
-
-function beforeUnloadHandler(e: BeforeUnloadEvent) {
-	if (isDirty) {
-		e.preventDefault();
-	}
-}
-
-onMount(() => {
-	window.addEventListener("beforeunload", beforeUnloadHandler);
-	volumeSettings.setMaster($USER_DATA?.volumeMaster || 0);
-	volumeSettings.setMuted($USER_DATA?.volumeMuted || false);
-	loadBlockedUsers();
-});
-
-onDestroy(() => {
-	window.removeEventListener("beforeunload", beforeUnloadHandler);
-});
-
-function handleAvatarClick() {
-	fileInput?.click();
-}
-function handleAvatarChange(e: Event) {
-	const f = (e.target as HTMLInputElement).files?.[0];
-	if (f) {
-		// Check file size
-		if (f.size > MAX_FILE_SIZE) {
-			toast.error("Profile picture must be smaller than 1MB");
-			(e.target as HTMLInputElement).value = "";
-			return;
-		}
-
-		// Check file type
-		if (!f.type.startsWith("image/")) {
-			toast.error("Please select a valid image file");
-			(e.target as HTMLInputElement).value = "";
-			return;
-		}
-
-		previewUrl = URL.createObjectURL(f);
-		const files = (e.target as HTMLInputElement).files;
-		if (files) avatarFile = files;
-	}
-}
-
-const checkUsername = debounce(async (val: string) => {
-	if (val.length < 3) return (usernameAvailable = null);
-	checkingUsername = true;
-	const res = await fetch(`/api/settings/check-username?username=${val}`);
-	usernameAvailable = (await res.json()).available;
-	checkingUsername = false;
-}, 500);
-
-$effect(() => {
-	if (username !== initialUsername) checkUsername(username);
-});
-
-$effect(() => {
-	validateName();
-});
-
-function validateName() {
-	if (!name.trim()) {
-		nameError = "Display name is required.";
-	} else if (name.trim().length < 2) {
-		nameError = "Display name must be at least 2 characters.";
-	} else if (name.trim().length > 50) {
-		nameError = "Display name must be 50 characters or less.";
-	} else {
-		nameError = "";
-	}
-}
-
-async function handleSubmit(e: Event) {
-	e.preventDefault();
-	loading = true;
-
-	try {
-		const fd = new FormData();
-		fd.append("name", name.trim());
-		fd.append("bio", bio);
-		fd.append("username", username);
-		fd.append("timezone", timezone);
-		if (avatarFile?.[0]) fd.append("avatar", avatarFile[0]);
-
-		const res = await fetch("/api/settings", { method: "POST", body: fd });
-
-		if (res.ok) {
-			await invalidateAll();
-			haptic.trigger("success");
-			toast.success("Settings updated successfully!", {
-				action: { label: "Refresh", onClick: () => window.location.reload() },
-			});
-		} else {
-			const result = await res.json();
-			toast.error("Failed to update settings", {
-				description:
-					result.message || "An error occurred while updating your settings",
-			});
-		}
-	} catch (error) {
-		toast.error("Failed to update settings", {
-			description: "An unexpected error occurred",
-		});
-	} finally {
-		loading = false;
-	}
-}
-
-const debouncedSaveVolume = debounce(
-	async (settings: { master: number; muted: boolean }) => {
+	async function loadBlockedUsers() {
+		blockedLoading = true;
 		try {
-			const response = await fetch("/api/settings/volume", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(settings),
+			const res = await fetch('/api/settings/blocked');
+			if (res.ok) {
+				const data = await res.json();
+				blockedUsers = data.blocks ?? [];
+			} else {
+				toast.error('Failed to load blocked users');
+			}
+		} catch {
+			toast.error('Failed to load blocked users');
+		}
+		blockedLoading = false;
+	}
+
+	async function unblockUser(username: string) {
+		unblockingUser = username;
+		try {
+			const res = await fetch(`/api/user/${username}/block`, {
+				method: 'DELETE'
+			});
+			if (res.ok) {
+				blockedUsers = blockedUsers.filter((b) => b.username !== username);
+				toast.success(`Unblocked @${username}`);
+			} else {
+				toast.error('Failed to unblock user');
+			}
+		} catch {
+			toast.error('Failed to unblock user');
+		}
+		unblockingUser = null;
+	}
+
+	function beforeUnloadHandler(e: BeforeUnloadEvent) {
+		if (isDirty) {
+			e.preventDefault();
+		}
+	}
+
+	onMount(() => {
+		window.addEventListener('beforeunload', beforeUnloadHandler);
+		volumeSettings.setMaster($USER_DATA?.volumeMaster || 0);
+		volumeSettings.setMuted($USER_DATA?.volumeMuted || false);
+		loadBlockedUsers();
+	});
+
+	onDestroy(() => {
+		window.removeEventListener('beforeunload', beforeUnloadHandler);
+	});
+
+	function handleAvatarClick() {
+		fileInput?.click();
+	}
+	function handleAvatarChange(e: Event) {
+		const f = (e.target as HTMLInputElement).files?.[0];
+		if (f) {
+			// Check file size
+			if (f.size > MAX_FILE_SIZE) {
+				toast.error('Profile picture must be smaller than 1MB');
+				(e.target as HTMLInputElement).value = '';
+				return;
+			}
+
+			// Check file type
+			if (!f.type.startsWith('image/')) {
+				toast.error('Please select a valid image file');
+				(e.target as HTMLInputElement).value = '';
+				return;
+			}
+
+			previewUrl = URL.createObjectURL(f);
+			const files = (e.target as HTMLInputElement).files;
+			if (files) avatarFile = files;
+		}
+	}
+
+	const checkUsername = debounce(async (val: string) => {
+		if (val.length < 3) return (usernameAvailable = null);
+		checkingUsername = true;
+		const res = await fetch(`/api/settings/check-username?username=${val}`);
+		usernameAvailable = (await res.json()).available;
+		checkingUsername = false;
+	}, 500);
+
+	$effect(() => {
+		if (username !== initialUsername) checkUsername(username);
+	});
+
+	$effect(() => {
+		validateName();
+	});
+
+	function validateName() {
+		if (!name.trim()) {
+			nameError = 'Display name is required.';
+		} else if (name.trim().length < 2) {
+			nameError = 'Display name must be at least 2 characters.';
+		} else if (name.trim().length > 50) {
+			nameError = 'Display name must be 50 characters or less.';
+		} else {
+			nameError = '';
+		}
+	}
+
+	async function handleSubmit(e: Event) {
+		e.preventDefault();
+		loading = true;
+
+		try {
+			const fd = new FormData();
+			fd.append('name', name.trim());
+			fd.append('bio', bio);
+			fd.append('username', username);
+			fd.append('timezone', timezone);
+			if (avatarFile?.[0]) fd.append('avatar', avatarFile[0]);
+
+			const res = await fetch('/api/settings', { method: 'POST', body: fd });
+
+			if (res.ok) {
+				await invalidateAll();
+				haptic.trigger('success');
+				toast.success('Settings updated successfully!', {
+					action: { label: 'Refresh', onClick: () => window.location.reload() }
+				});
+			} else {
+				const result = await res.json();
+				toast.error('Failed to update settings', {
+					description: result.message || 'An error occurred while updating your settings'
+				});
+			}
+		} catch (error) {
+			toast.error('Failed to update settings', {
+				description: 'An unexpected error occurred'
+			});
+		} finally {
+			loading = false;
+		}
+	}
+
+	const debouncedSaveVolume = debounce(async (settings: { master: number; muted: boolean }) => {
+		try {
+			const response = await fetch('/api/settings/volume', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(settings)
 			});
 
 			if (!response.ok) {
-				throw new Error("Failed to save volume settings");
+				throw new Error('Failed to save volume settings');
 			}
 		} catch (error) {
-			console.error("Failed to save volume settings:", error);
-			toast.error("Failed to save volume settings");
+			console.error('Failed to save volume settings:', error);
+			toast.error('Failed to save volume settings');
 		}
-	},
-	500,
-);
+	}, 500);
 
-async function saveVolumeToServer(settings: {
-	master: number;
-	muted: boolean;
-}) {
-	debouncedSaveVolume(settings);
-}
-
-async function toggleDisableMentions() {
-	disableMentions = !disableMentions;
-	haptic.trigger("light");
-	try {
-		const response = await fetch("/api/settings/mentions", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ disableMentions }),
-		});
-		if (!response.ok) {
-			disableMentions = !disableMentions;
-			toast.error("Failed to update mention settings");
-		}
-	} catch {
-		disableMentions = !disableMentions;
-		toast.error("Failed to update mention settings");
+	async function saveVolumeToServer(settings: { master: number; muted: boolean }) {
+		debouncedSaveVolume(settings);
 	}
-}
 
-function handleMasterVolumeChange(value: number) {
-	masterVolume = value;
-	const normalizedValue = value / 100;
-	volumeSettings.setMaster(normalizedValue);
-	saveVolumeToServer({ master: normalizedValue, muted: isMuted });
-}
-function toggleMute() {
-	isMuted = !isMuted;
-	haptic.trigger("light");
-	volumeSettings.setMuted(isMuted);
-	saveVolumeToServer({ master: masterVolume / 100, muted: isMuted });
-}
-
-async function downloadUserData() {
-	isDownloading = true;
-	try {
-		const headResponse = await fetch("/api/settings/data-download", {
-			method: "HEAD",
-		});
-
-		if (!headResponse.ok) {
-			throw new Error("Download service unavailable");
+	async function toggleDisableMentions() {
+		disableMentions = !disableMentions;
+		haptic.trigger('light');
+		try {
+			const response = await fetch('/api/settings/mentions', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ disableMentions })
+			});
+			if (!response.ok) {
+				disableMentions = !disableMentions;
+				toast.error('Failed to update mention settings');
+			}
+		} catch {
+			disableMentions = !disableMentions;
+			toast.error('Failed to update mention settings');
 		}
+	}
 
-		const contentLength = headResponse.headers.get("Content-Length");
-		if (contentLength) {
-			const sizeInMB = parseInt(contentLength) / (1024 * 1024);
-			if (sizeInMB > 50) {
-				const proceed = confirm(
-					`Your data export is ${sizeInMB.toFixed(1)}MB. This may take a while to download. Continue?`,
-				);
-				if (!proceed) {
-					isDownloading = false;
-					return;
+	function handleMasterVolumeChange(value: number) {
+		masterVolume = value;
+		const normalizedValue = value / 100;
+		volumeSettings.setMaster(normalizedValue);
+		saveVolumeToServer({ master: normalizedValue, muted: isMuted });
+	}
+	function toggleMute() {
+		isMuted = !isMuted;
+		haptic.trigger('light');
+		volumeSettings.setMuted(isMuted);
+		saveVolumeToServer({ master: masterVolume / 100, muted: isMuted });
+	}
+
+	async function downloadUserData() {
+		isDownloading = true;
+		try {
+			const headResponse = await fetch('/api/settings/data-download', {
+				method: 'HEAD'
+			});
+
+			if (!headResponse.ok) {
+				throw new Error('Download service unavailable');
+			}
+
+			const contentLength = headResponse.headers.get('Content-Length');
+			if (contentLength) {
+				const sizeInMB = parseInt(contentLength) / (1024 * 1024);
+				if (sizeInMB > 50) {
+					const proceed = confirm(
+						`Your data export is ${sizeInMB.toFixed(1)}MB. This may take a while to download. Continue?`
+					);
+					if (!proceed) {
+						isDownloading = false;
+						return;
+					}
 				}
 			}
-		}
 
-		const downloadUrl = "/api/settings/data-download";
+			const downloadUrl = '/api/settings/data-download';
 
-		const downloadWindow = window.open(downloadUrl, "_blank");
+			const downloadWindow = window.open(downloadUrl, '_blank');
 
-		if (!downloadWindow || downloadWindow.closed) {
-			const a = document.createElement("a");
-			a.href = downloadUrl;
-			a.style.display = "none";
-			a.target = "_blank";
-			document.body.appendChild(a);
-			a.click();
-			document.body.removeChild(a);
-		} else {
-			setTimeout(() => {
-				try {
-					downloadWindow.close();
-				} catch (e) {}
-			}, 1000);
-		}
-
-		toast.success("Your data download has started");
-	} catch (error) {
-		console.error("Download error:", error);
-		toast.error("Failed to start data download: " + (error as Error).message);
-	} finally {
-		isDownloading = false;
-	}
-}
-
-async function deleteAccount() {
-	if (deleteConfirmationText !== "DELETE MY ACCOUNT") {
-		haptic.trigger("error");
-		toast.error('Please type "DELETE MY ACCOUNT" to confirm');
-		return;
-	}
-
-	isDeleting = true;
-	try {
-		const response = await fetch("/api/settings/delete-account", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({
-				confirmationText: deleteConfirmationText,
-			}),
-		});
-
-		const result = await response.json();
-
-		if (!response.ok) {
-			if (response.status === 409) {
-				toast.error("Account deletion already scheduled", {
-					description:
-						"You have already requested account deletion. Contact support to cancel.",
-				});
+			if (!downloadWindow || downloadWindow.closed) {
+				const a = document.createElement('a');
+				a.href = downloadUrl;
+				a.style.display = 'none';
+				a.target = '_blank';
+				document.body.appendChild(a);
+				a.click();
+				document.body.removeChild(a);
 			} else {
-				throw new Error(result.message || "Failed to delete account");
+				setTimeout(() => {
+					try {
+						downloadWindow.close();
+					} catch (e) {}
+				}, 1000);
 			}
-		} else {
-			toast.success("Account deletion scheduled successfully", {
-				description: result.message,
-			});
+
+			toast.success('Your data download has started');
+		} catch (error) {
+			console.error('Download error:', error);
+			toast.error('Failed to start data download: ' + (error as Error).message);
+		} finally {
+			isDownloading = false;
 		}
-	} catch (error: any) {
-		console.error("Delete account error:", error);
-		toast.error("Failed to delete account: " + error.message);
-	} finally {
-		isDeleting = false;
-		deleteDialogOpen = false;
-		deleteConfirmationText = "";
 	}
-}
+
+	async function deleteAccount() {
+		if (deleteConfirmationText !== 'DELETE MY ACCOUNT') {
+			haptic.trigger('error');
+			toast.error('Please type "DELETE MY ACCOUNT" to confirm');
+			return;
+		}
+
+		isDeleting = true;
+		try {
+			const response = await fetch('/api/settings/delete-account', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					confirmationText: deleteConfirmationText
+				})
+			});
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				if (response.status === 409) {
+					toast.error('Account deletion already scheduled', {
+						description: 'You have already requested account deletion. Contact support to cancel.'
+					});
+				} else {
+					throw new Error(result.message || 'Failed to delete account');
+				}
+			} else {
+				toast.success('Account deletion scheduled successfully', {
+					description: result.message
+				});
+			}
+		} catch (error: any) {
+			console.error('Delete account error:', error);
+			toast.error('Failed to delete account: ' + error.message);
+		} finally {
+			isDeleting = false;
+			deleteDialogOpen = false;
+			deleteConfirmationText = '';
+		}
+	}
 </script>
 
 <SEO

@@ -1,122 +1,122 @@
 <script lang="ts">
-// @ts-expect-error
-import { chart } from "svelte-apexcharts?client";
-import {
-	Activity01Icon,
-	Analytics01Icon,
-	ChartColumnIcon,
-	FullScreenIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/svelte";
-import { onMount } from "svelte";
-import { goto } from "$app/navigation";
-import SEO from "$lib/components/self/SEO.svelte";
-import { Badge } from "$lib/components/ui/badge";
-import { Button } from "$lib/components/ui/button";
-import * as Card from "$lib/components/ui/card";
-// it doens't have types idk
-import { Skeleton } from "$lib/components/ui/skeleton";
-import { allTradesStore } from "$lib/stores/websocket";
-import { formatValue } from "$lib/utils";
+	// @ts-expect-error
+	import { chart } from 'svelte-apexcharts?client';
+	import {
+		Activity01Icon,
+		Analytics01Icon,
+		ChartColumnIcon,
+		FullScreenIcon
+	} from '@hugeicons/core-free-icons';
+	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import SEO from '$lib/components/self/SEO.svelte';
+	import { Badge } from '$lib/components/ui/badge';
+	import { Button } from '$lib/components/ui/button';
+	import * as Card from '$lib/components/ui/card';
+	// it doens't have types idk
+	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { allTradesStore } from '$lib/stores/websocket';
+	import { formatValue } from '$lib/utils';
 
-interface CoinData {
-	symbol: string;
-	name: string;
-	currentPrice: number;
-	marketCap: number;
-	priceChange24h: number;
-	volume24h: number;
-}
+	interface CoinData {
+		symbol: string;
+		name: string;
+		currentPrice: number;
+		marketCap: number;
+		priceChange24h: number;
+		volume24h: number;
+	}
 
-let coins: CoinData[] = $state([]);
-let isLoading = $state(true);
-let error = $state<string | null>(null);
-let lastUpdated = $state<Date>(new Date());
-const isLiveUpdatesEnabled = $state(true);
-let isFullscreen = $state(false);
-let fullscreenContainer: HTMLDivElement;
+	let coins: CoinData[] = $state([]);
+	let isLoading = $state(true);
+	let error = $state<string | null>(null);
+	let lastUpdated = $state<Date>(new Date());
+	let isLiveUpdatesEnabled = $state(true);
+	let isFullscreen = $state(false);
+	let fullscreenContainer: HTMLDivElement;
 
-const treemapOptions = $derived({
-	series: [
-		{
-			data: coins.map((coin) => {
-				const change = coin.priceChange24h;
+	const treemapOptions = $derived({
+		series: [
+			{
+				data: coins.map((coin) => {
+					const change = coin.priceChange24h;
 
-				if (Math.abs(change) < 0.5) {
+					if (Math.abs(change) < 0.5) {
+						return {
+							x: coin.symbol,
+							y: coin.currentPrice,
+							fillColor: 'rgba(107,114,128,0.3)'
+						};
+					}
+
+					const intensity = Math.min(Math.abs(change) / 100, 1);
+					const alpha = 0.3 + intensity * 0.7;
+
+					const base = change >= 0 ? '16,163,74' : '220,38,38';
 					return {
 						x: coin.symbol,
 						y: coin.currentPrice,
-						fillColor: "rgba(107,114,128,0.3)",
+						fillColor: `rgba(${base},${alpha})`
 					};
-				}
-
-				const intensity = Math.min(Math.abs(change) / 100, 1);
-				const alpha = 0.3 + intensity * 0.7;
-
-				const base = change >= 0 ? "16,163,74" : "220,38,38";
-				return {
-					x: coin.symbol,
-					y: coin.currentPrice,
-					fillColor: `rgba(${base},${alpha})`,
-				};
-			}),
-		},
-	],
-	chart: {
-		height: isFullscreen ? window.innerHeight - 300 : 600,
-		type: "treemap",
-		toolbar: {
-			show: false,
-		},
-		background: "transparent",
-		animations: {
-			enabled: true,
-			easing: "easeinout",
-			speed: 200,
-		},
-		events: {
-			dataPointSelection: (_event: any, _chartContext: any, config: any) => {
-				const coin = coins[config.dataPointIndex];
-				if (coin) {
-					goto(`/coin/${coin.symbol}`);
-				}
+				})
+			}
+		],
+		chart: {
+			height: isFullscreen ? window.innerHeight - 300 : 600,
+			type: 'treemap',
+			toolbar: {
+				show: false
 			},
+			background: 'transparent',
+			animations: {
+				enabled: true,
+				easing: 'easeinout',
+				speed: 200
+			},
+			events: {
+				dataPointSelection: (_event: any, _chartContext: any, config: any) => {
+					const coin = coins[config.dataPointIndex];
+					if (coin) {
+						goto(`/coin/${coin.symbol}`);
+					}
+				}
+			}
 		},
-	},
-	dataLabels: {
-		enabled: true,
-		style: {
-			fontSize: "12px",
-			fontWeight: "bold",
-			colors: ["#ffffff"],
+		dataLabels: {
+			enabled: true,
+			style: {
+				fontSize: '12px',
+				fontWeight: 'bold',
+				colors: ['#ffffff']
+			},
+			formatter: (text: string, op: any) => {
+				const coin = coins.find((c) => c.symbol === text);
+				if (!coin) return [text];
+				const changeSign = coin.priceChange24h >= 0 ? '+' : '';
+				return [text, `${changeSign}${coin.priceChange24h.toFixed(2)}%`];
+			},
+			offsetY: -4
 		},
-		formatter: (text: string, op: any) => {
-			const coin = coins.find((c) => c.symbol === text);
-			if (!coin) return [text];
-			const changeSign = coin.priceChange24h >= 0 ? "+" : "";
-			return [text, `${changeSign}${coin.priceChange24h.toFixed(2)}%`];
+		plotOptions: {
+			treemap: {
+				distributed: true,
+				enableShades: false
+			}
 		},
-		offsetY: -4,
-	},
-	plotOptions: {
-		treemap: {
-			distributed: true,
-			enableShades: false,
+		legend: {
+			show: false
 		},
-	},
-	legend: {
-		show: false,
-	},
-	tooltip: {
-		enabled: true,
-		custom: ({ seriesIndex, dataPointIndex }: any) => {
-			const coin = coins[dataPointIndex];
-			if (!coin) return "";
+		tooltip: {
+			enabled: true,
+			custom: ({ seriesIndex, dataPointIndex }: any) => {
+				const coin = coins[dataPointIndex];
+				if (!coin) return '';
 
-			const changeColor = coin.priceChange24h >= 0 ? "#22c55e" : "#ef4444";
-			const changeSign = coin.priceChange24h >= 0 ? "+" : "";
+				const changeColor = coin.priceChange24h >= 0 ? '#22c55e' : '#ef4444';
+				const changeSign = coin.priceChange24h >= 0 ? '+' : '';
 
-			return `
+				return `
 					<div class="p-3 bg-card border rounded-md shadow-lg">
 						<div class="font-semibold text-lg mb-2">*${coin.symbol}</div>
 						<div class="text-sm text-muted-foreground mb-1">${coin.name}</div>
@@ -128,95 +128,92 @@ const treemapOptions = $derived({
 						</div>
 					</div>
 				`;
+			}
 		},
-	},
-	theme: {
-		mode: "light",
-	},
-});
+		theme: {
+			mode: 'light'
+		}
+	});
 
-$effect(() => {
-	if ($allTradesStore.length > 0 && isLiveUpdatesEnabled) {
-		const timeoutId = setTimeout(() => {
-			fetchCoins();
-		}, 2000);
+	$effect(() => {
+		if ($allTradesStore.length > 0 && isLiveUpdatesEnabled) {
+			const timeoutId = setTimeout(() => {
+				fetchCoins();
+			}, 2000);
 
-		return () => clearTimeout(timeoutId);
+			return () => clearTimeout(timeoutId);
+		}
+	});
+
+	$effect(() => {
+		function handleFullscreenChange() {
+			isFullscreen = !!document.fullscreenElement;
+		}
+
+		document.addEventListener('fullscreenchange', handleFullscreenChange);
+		document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+		document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+		document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+		return () => {
+			document.removeEventListener('fullscreenchange', handleFullscreenChange);
+			document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+			document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+			document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+		};
+	});
+
+	async function toggleFullscreen() {
+		if (!document.fullscreenElement) {
+			try {
+				await fullscreenContainer.requestFullscreen();
+			} catch (err) {
+				console.error('Error attempting to enable fullscreen:', err);
+			}
+		} else {
+			try {
+				await document.exitFullscreen();
+			} catch (err) {
+				console.error('Error attempting to exit fullscreen:', err);
+			}
+		}
 	}
-});
 
-$effect(() => {
-	function handleFullscreenChange() {
-		isFullscreen = !!document.fullscreenElement;
-	}
-
-	document.addEventListener("fullscreenchange", handleFullscreenChange);
-	document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
-	document.addEventListener("mozfullscreenchange", handleFullscreenChange);
-	document.addEventListener("MSFullscreenChange", handleFullscreenChange);
-
-	return () => {
-		document.removeEventListener("fullscreenchange", handleFullscreenChange);
-		document.removeEventListener(
-			"webkitfullscreenchange",
-			handleFullscreenChange,
-		);
-		document.removeEventListener("mozfullscreenchange", handleFullscreenChange);
-		document.removeEventListener("MSFullscreenChange", handleFullscreenChange);
-	};
-});
-
-async function toggleFullscreen() {
-	if (!document.fullscreenElement) {
+	async function fetchCoins() {
 		try {
-			await fullscreenContainer.requestFullscreen();
+			if (coins.length === 0) {
+				isLoading = true;
+			}
+			error = null;
+
+			const response = await fetch('/api/market?limit=100');
+			if (!response.ok) {
+				throw new Error('Failed to fetch coins data');
+			}
+
+			const data = await response.json();
+			coins =
+				data.coins.map((coin: any) => ({
+					symbol: coin.symbol,
+					name: coin.name,
+					currentPrice: coin.currentPrice,
+					marketCap: coin.marketCap,
+					priceChange24h: coin.change24h,
+					volume24h: coin.volume24h
+				})) || [];
+
+			lastUpdated = new Date();
 		} catch (err) {
-			console.error("Error attempting to enable fullscreen:", err);
-		}
-	} else {
-		try {
-			await document.exitFullscreen();
-		} catch (err) {
-			console.error("Error attempting to exit fullscreen:", err);
+			error = err instanceof Error ? err.message : 'An error occurred';
+			console.error('Error fetching coins:', err);
+		} finally {
+			isLoading = false;
 		}
 	}
-}
 
-async function fetchCoins() {
-	try {
-		if (coins.length === 0) {
-			isLoading = true;
-		}
-		error = null;
-
-		const response = await fetch("/api/market?limit=100");
-		if (!response.ok) {
-			throw new Error("Failed to fetch coins data");
-		}
-
-		const data = await response.json();
-		coins =
-			data.coins.map((coin: any) => ({
-				symbol: coin.symbol,
-				name: coin.name,
-				currentPrice: coin.currentPrice,
-				marketCap: coin.marketCap,
-				priceChange24h: coin.change24h,
-				volume24h: coin.volume24h,
-			})) || [];
-
-		lastUpdated = new Date();
-	} catch (err) {
-		error = err instanceof Error ? err.message : "An error occurred";
-		console.error("Error fetching coins:", err);
-	} finally {
-		isLoading = false;
-	}
-}
-
-onMount(() => {
-	fetchCoins();
-});
+	onMount(() => {
+		fetchCoins();
+	});
 </script>
 
 <SEO

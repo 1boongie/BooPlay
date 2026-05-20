@@ -1,279 +1,268 @@
 <script lang="ts">
-import {
-	DollarCircleIcon,
-	Invoice03Icon,
-	ReceiptDollarIcon,
-	SentIcon,
-	TradeUpIcon,
-	Wallet01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/svelte";
-import { onMount } from "svelte";
-import { _ } from "svelte-i18n";
-import { toast } from "svelte-sonner";
-import { goto } from "$app/navigation";
-import DataTable from "$lib/components/self/DataTable.svelte";
-import SEO from "$lib/components/self/SEO.svelte";
-import SendMoneyModal from "$lib/components/self/SendMoneyModal.svelte";
-import SignInConfirmDialog from "$lib/components/self/SignInConfirmDialog.svelte";
-import PortfolioSkeleton from "$lib/components/self/skeletons/PortfolioSkeleton.svelte";
-import { Button } from "$lib/components/ui/button";
-import * as Card from "$lib/components/ui/card";
-import { fetchPortfolioData, PORTFOLIO_DATA } from "$lib/stores/portfolio-data";
-import { USER_DATA } from "$lib/stores/user-data";
-import {
-	formatDate,
-	formatPrice,
-	formatQuantity,
-	formatValue,
-} from "$lib/utils";
+	import {
+		DollarCircleIcon,
+		Invoice03Icon,
+		ReceiptDollarIcon,
+		SentIcon,
+		TradeUpIcon,
+		Wallet01Icon
+	} from '@hugeicons/core-free-icons';
+	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import { onMount } from 'svelte';
+	import { _ } from 'svelte-i18n';
+	import { toast } from 'svelte-sonner';
+	import { goto } from '$app/navigation';
+	import DataTable from '$lib/components/self/DataTable.svelte';
+	import SEO from '$lib/components/self/SEO.svelte';
+	import SendMoneyModal from '$lib/components/self/SendMoneyModal.svelte';
+	import SignInConfirmDialog from '$lib/components/self/SignInConfirmDialog.svelte';
+	import PortfolioSkeleton from '$lib/components/self/skeletons/PortfolioSkeleton.svelte';
+	import { Button } from '$lib/components/ui/button';
+	import * as Card from '$lib/components/ui/card';
+	import { fetchPortfolioData, PORTFOLIO_DATA } from '$lib/stores/portfolio-data';
+	import { USER_DATA } from '$lib/stores/user-data';
+	import { formatDate, formatPrice, formatQuantity, formatValue } from '$lib/utils';
 
-// TODO: add type definitions
-let transactions = $state<any[]>([]);
-let loading = $state(true);
-let error = $state<string | null>(null);
-const sendMoneyModalOpen = $state(false);
-const shouldSignIn = $state(false);
+	// TODO: add type definitions
+	let transactions = $state<any[]>([]);
+	let loading = $state(true);
+	let error = $state<string | null>(null);
+	let sendMoneyModalOpen = $state(false);
+	let shouldSignIn = $state(false);
 
-onMount(async () => {
-	await Promise.all([loadPortfolioData(), fetchRecentTransactions()]);
-	loading = false;
-});
+	onMount(async () => {
+		await Promise.all([loadPortfolioData(), fetchRecentTransactions()]);
+		loading = false;
+	});
 
-async function loadPortfolioData() {
-	try {
-		const data = await fetchPortfolioData();
-		if (!data) {
-			error = "Failed to load portfolio data";
-			toast.error("Failed to load portfolio data");
-		} else {
-			error = null;
-		}
-	} catch (e) {
-		console.error("Failed to fetch portfolio data:", e);
-		error = "Failed to load portfolio data";
-		toast.error("Failed to load portfolio data");
-	}
-}
-
-async function fetchRecentTransactions() {
-	try {
-		const response = await fetch("/api/transactions");
-		if (response.ok) {
-			const result = await response.json();
-			transactions = result.transactions.slice(0, 10); // Show last 10 transactions
-		} else {
-			toast.error("Failed to load transactions");
-		}
-	} catch (e) {
-		console.error("Failed to fetch transactions:", e);
-		toast.error("Failed to load transactions");
-	}
-}
-
-async function retryFetch() {
-	loading = true;
-	error = null;
-	await Promise.all([loadPortfolioData(), fetchRecentTransactions()]);
-	loading = false;
-}
-
-const portfolioData = $derived($PORTFOLIO_DATA);
-const totalPortfolioValue = $derived(
-	portfolioData ? portfolioData.totalValue : 0,
-);
-const hasHoldings = $derived(
-	portfolioData && portfolioData.coinHoldings.length > 0,
-);
-const hasTransactions = $derived(transactions.length > 0);
-
-const holdingsColumns = $derived([
-	{
-		key: "coin",
-		label: $_("global.coin"),
-		class: "w-[25%] min-w-[120px] md:w-[12%]",
-		render: (value: any, row: any) => ({
-			component: "coin",
-			icon: row.icon,
-			symbol: row.symbol,
-			name: `*${row.symbol}`,
-			size: 6,
-		}),
-	},
-	{
-		key: "quantity",
-		label: $_("global.quantity"),
-		class: "w-[15%] min-w-[80px] md:w-[10%] font-mono",
-		sortable: true,
-		render: (value: any) => formatQuantity(value),
-	},
-	{
-		key: "currentPrice",
-		label: $_("global.price"),
-		class: "w-[12%] min-w-[70px] md:w-[10%] font-mono",
-		sortable: true,
-		render: (value: any) => `$${formatPrice(value)}`,
-	},
-	{
-		key: "percentageChange",
-		label: "P&L %",
-		class: "w-[15%] min-w-[80px] md:w-[12%]",
-		sortable: true,
-		render: (value: any) => ({
-			component: "badge",
-			variant: value >= 0 ? "success" : "destructive",
-			text: `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`,
-		}),
-	},
-	{
-		key: "change24h",
-		label: $_("coin.24hchange"),
-		class: "w-[15%] min-w-[80px] md:w-[12%]",
-		sortable: true,
-		render: (value: any) => ({
-			component: "badge",
-			variant: value >= 0 ? "success" : "destructive",
-			text: `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`,
-		}),
-	},
-	{
-		key: "value",
-		label: $_("global.value"),
-		class: "w-[12%] min-w-[70px] md:w-[10%] font-mono font-medium",
-		sortable: true,
-		defaultSort: true,
-		render: (value: any) => formatValue(value),
-	},
-	{
-		key: "portfolioPercent",
-		label: "Portfolio %",
-		class: "hidden md:table-cell md:w-[12%]",
-		render: (value: any, row: any) => ({
-			component: "badge",
-			variant: "outline",
-			text: `${((row.value / totalPortfolioValue) * 100).toFixed(1)}%`,
-		}),
-	},
-]);
-
-// Column configurations for transactions table
-const transactionsColumns = $derived([
-	{
-		key: "type",
-		label: $_("global.type"),
-		class: "w-[12%] min-w-[60px] md:w-[8%]",
-		render: (value: any, row: any) => {
-			if (row.isTransfer) {
-				return {
-					component: "badge",
-					variant: "default",
-					text: row.isIncoming ? "Received" : "Sent",
-					class: "text-xs",
-				};
+	async function loadPortfolioData() {
+		try {
+			const data = await fetchPortfolioData();
+			if (!data) {
+				error = 'Failed to load portfolio data';
+				toast.error('Failed to load portfolio data');
+			} else {
+				error = null;
 			}
-			return {
-				component: "badge",
-				variant: value === "BUY" ? "success" : "destructive",
-				text: value === "BUY" ? "Buy" : "Sell",
-				class: "text-xs",
-			};
+		} catch (e) {
+			console.error('Failed to fetch portfolio data:', e);
+			error = 'Failed to load portfolio data';
+			toast.error('Failed to load portfolio data');
+		}
+	}
+
+	async function fetchRecentTransactions() {
+		try {
+			const response = await fetch('/api/transactions');
+			if (response.ok) {
+				const result = await response.json();
+				transactions = result.transactions.slice(0, 10); // Show last 10 transactions
+			} else {
+				toast.error('Failed to load transactions');
+			}
+		} catch (e) {
+			console.error('Failed to fetch transactions:', e);
+			toast.error('Failed to load transactions');
+		}
+	}
+
+	async function retryFetch() {
+		loading = true;
+		error = null;
+		await Promise.all([loadPortfolioData(), fetchRecentTransactions()]);
+		loading = false;
+	}
+
+	const portfolioData = $derived($PORTFOLIO_DATA);
+	const totalPortfolioValue = $derived(portfolioData ? portfolioData.totalValue : 0);
+	const hasHoldings = $derived(portfolioData && portfolioData.coinHoldings.length > 0);
+	const hasTransactions = $derived(transactions.length > 0);
+
+	const holdingsColumns = $derived([
+		{
+			key: 'coin',
+			label: $_('global.coin'),
+			class: 'w-[25%] min-w-[120px] md:w-[12%]',
+			render: (value: any, row: any) => ({
+				component: 'coin',
+				icon: row.icon,
+				symbol: row.symbol,
+				name: `*${row.symbol}`,
+				size: 6
+			})
 		},
-	},
-	{
-		key: "coin",
-		label: $_("global.coin"),
-		class: "w-[20%] min-w-[100px] md:w-[12%]",
-		render: (value: any, row: any) => {
-			if (row.isTransfer) {
-				if (row.isCoinTransfer && row.coin) {
+		{
+			key: 'quantity',
+			label: $_('global.quantity'),
+			class: 'w-[15%] min-w-[80px] md:w-[10%] font-mono',
+			sortable: true,
+			render: (value: any) => formatQuantity(value)
+		},
+		{
+			key: 'currentPrice',
+			label: $_('global.price'),
+			class: 'w-[12%] min-w-[70px] md:w-[10%] font-mono',
+			sortable: true,
+			render: (value: any) => `$${formatPrice(value)}`
+		},
+		{
+			key: 'percentageChange',
+			label: 'P&L %',
+			class: 'w-[15%] min-w-[80px] md:w-[12%]',
+			sortable: true,
+			render: (value: any) => ({
+				component: 'badge',
+				variant: value >= 0 ? 'success' : 'destructive',
+				text: `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`
+			})
+		},
+		{
+			key: 'change24h',
+			label: $_('coin.24hchange'),
+			class: 'w-[15%] min-w-[80px] md:w-[12%]',
+			sortable: true,
+			render: (value: any) => ({
+				component: 'badge',
+				variant: value >= 0 ? 'success' : 'destructive',
+				text: `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`
+			})
+		},
+		{
+			key: 'value',
+			label: $_('global.value'),
+			class: 'w-[12%] min-w-[70px] md:w-[10%] font-mono font-medium',
+			sortable: true,
+			defaultSort: true,
+			render: (value: any) => formatValue(value)
+		},
+		{
+			key: 'portfolioPercent',
+			label: 'Portfolio %',
+			class: 'hidden md:table-cell md:w-[12%]',
+			render: (value: any, row: any) => ({
+				component: 'badge',
+				variant: 'outline',
+				text: `${((row.value / totalPortfolioValue) * 100).toFixed(1)}%`
+			})
+		}
+	]);
+
+	// Column configurations for transactions table
+	const transactionsColumns = $derived([
+		{
+			key: 'type',
+			label: $_('global.type'),
+			class: 'w-[12%] min-w-[60px] md:w-[8%]',
+			render: (value: any, row: any) => {
+				if (row.isTransfer) {
 					return {
-						component: "coin",
-						icon: row.coin.icon,
-						symbol: row.coin.symbol,
-						name: `*${row.coin.symbol}`,
-						size: 4,
+						component: 'badge',
+						variant: 'default',
+						text: row.isIncoming ? 'Received' : 'Sent',
+						class: 'text-xs'
 					};
 				}
-				return { component: "text", text: "-" };
+				return {
+					component: 'badge',
+					variant: value === 'BUY' ? 'success' : 'destructive',
+					text: value === 'BUY' ? 'Buy' : 'Sell',
+					class: 'text-xs'
+				};
 			}
-			return {
-				component: "coin",
-				icon: row.coin.icon,
-				symbol: row.coin.symbol,
-				name: `*${row.coin.symbol}`,
-				size: 4,
-			};
 		},
-	},
-	{
-		key: "sender",
-		label: $_("global.sender"),
-		class: "w-[12%] min-w-[70px] md:w-[10%]",
-		render: (value: any, row: any) => ({
-			component: "text",
-			text: row.isTransfer ? row.sender || "Unknown" : "-",
-			class:
-				row.isTransfer && row.sender && row.sender !== "Unknown"
-					? "font-medium"
-					: "text-muted-foreground",
-		}),
-	},
-	{
-		key: "recipient",
-		label: $_("global.receiver"),
-		class: "w-[12%] min-w-[70px] md:w-[10%]",
-		render: (value: any, row: any) => ({
-			component: "text",
-			text: row.isTransfer ? row.recipient || "Unknown" : "-",
-			class:
-				row.isTransfer && row.recipient && row.recipient !== "Unknown"
-					? "font-medium"
-					: "text-muted-foreground",
-		}),
-	},
-	{
-		key: "quantity",
-		label: $_("global.quantity"),
-		class: "w-[12%] min-w-[70px] md:w-[10%] font-mono text-sm",
-		render: (value: any, row: any) =>
-			row.isTransfer && value === 0 ? "-" : formatQuantity(value),
-	},
-	{
-		key: "totalBaseCurrencyAmount",
-		label: $_("global.amount"),
-		class: "w-[12%] min-w-[70px] md:w-[10%] font-mono text-sm font-medium",
-		render: (value: any) => formatValue(value),
-	},
-	{
-		key: "timestamp",
-		label: $_("global.date"),
-		class: "hidden md:table-cell md:w-[18%] text-muted-foreground text-sm",
-		render: (value: any) => formatDate(value),
-	},
-	{
-		key: "note",
-		label: $_("global.note"),
-		class: "hidden lg:table-cell w-[20%] text-muted-foreground text-sm",
-		render: (value: any, row: any) => {
-			const isTransfer =
-				row.isTransfer ||
-				row.type === "TRANSFER_IN" ||
-				row.type === "TRANSFER_OUT";
-			if (!isTransfer || !value) {
-				return { component: "text", text: "-", class: "text-muted-foreground" };
+		{
+			key: 'coin',
+			label: $_('global.coin'),
+			class: 'w-[20%] min-w-[100px] md:w-[12%]',
+			render: (value: any, row: any) => {
+				if (row.isTransfer) {
+					if (row.isCoinTransfer && row.coin) {
+						return {
+							component: 'coin',
+							icon: row.coin.icon,
+							symbol: row.coin.symbol,
+							name: `*${row.coin.symbol}`,
+							size: 4
+						};
+					}
+					return { component: 'text', text: '-' };
+				}
+				return {
+					component: 'coin',
+					icon: row.coin.icon,
+					symbol: row.coin.symbol,
+					name: `*${row.coin.symbol}`,
+					size: 4
+				};
 			}
-			return {
-				component: "text",
-				text: value,
-				class: "text-sm italic truncate max-w-[180px]",
-			};
 		},
-	},
-]);
+		{
+			key: 'sender',
+			label: $_('global.sender'),
+			class: 'w-[12%] min-w-[70px] md:w-[10%]',
+			render: (value: any, row: any) => ({
+				component: 'text',
+				text: row.isTransfer ? row.sender || 'Unknown' : '-',
+				class:
+					row.isTransfer && row.sender && row.sender !== 'Unknown'
+						? 'font-medium'
+						: 'text-muted-foreground'
+			})
+		},
+		{
+			key: 'recipient',
+			label: $_('global.receiver'),
+			class: 'w-[12%] min-w-[70px] md:w-[10%]',
+			render: (value: any, row: any) => ({
+				component: 'text',
+				text: row.isTransfer ? row.recipient || 'Unknown' : '-',
+				class:
+					row.isTransfer && row.recipient && row.recipient !== 'Unknown'
+						? 'font-medium'
+						: 'text-muted-foreground'
+			})
+		},
+		{
+			key: 'quantity',
+			label: $_('global.quantity'),
+			class: 'w-[12%] min-w-[70px] md:w-[10%] font-mono text-sm',
+			render: (value: any, row: any) =>
+				row.isTransfer && value === 0 ? '-' : formatQuantity(value)
+		},
+		{
+			key: 'totalBaseCurrencyAmount',
+			label: $_('global.amount'),
+			class: 'w-[12%] min-w-[70px] md:w-[10%] font-mono text-sm font-medium',
+			render: (value: any) => formatValue(value)
+		},
+		{
+			key: 'timestamp',
+			label: $_('global.date'),
+			class: 'hidden md:table-cell md:w-[18%] text-muted-foreground text-sm',
+			render: (value: any) => formatDate(value)
+		},
+		{
+			key: 'note',
+			label: $_('global.note'),
+			class: 'hidden lg:table-cell w-[20%] text-muted-foreground text-sm',
+			render: (value: any, row: any) => {
+				const isTransfer =
+					row.isTransfer || row.type === 'TRANSFER_IN' || row.type === 'TRANSFER_OUT';
+				if (!isTransfer || !value) {
+					return { component: 'text', text: '-', class: 'text-muted-foreground' };
+				}
+				return {
+					component: 'text',
+					text: value,
+					class: 'text-sm italic truncate max-w-[180px]'
+				};
+			}
+		}
+	]);
 
-async function handleTransferSuccess() {
-	await Promise.all([loadPortfolioData(), fetchRecentTransactions()]);
-}
+	async function handleTransferSuccess() {
+		await Promise.all([loadPortfolioData(), fetchRecentTransactions()]);
+	}
 </script>
 
 <SEO

@@ -11,6 +11,7 @@ export function getTimezoneDate(offset: number) {
 }
 
 export function formatTimezone(t: number) {
+	if (t === undefined) return `00:00`;
 	const hours = Math.floor(Math.abs(t));
 	const minutes = Math.round((Math.abs(t) % 1) * 60);
 	const sign = t < 0 ? '-' : '+';

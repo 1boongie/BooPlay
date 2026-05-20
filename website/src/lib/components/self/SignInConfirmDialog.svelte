@@ -1,18 +1,22 @@
 <script lang="ts">
+	import { DiscordIcon } from '@hugeicons/core-free-icons';
+	import { _ } from 'svelte-i18n';
+	import { Icon } from 'svelte-sonner';
+	import { page } from '$app/state';
+	import { signIn } from '$lib/auth-client';
+	import { Button } from '$lib/components/ui/button';
 	import {
 		Dialog,
 		DialogContent,
+		DialogDescription,
 		DialogHeader,
-		DialogTitle,
-		DialogDescription
+		DialogTitle
 	} from '$lib/components/ui/dialog';
-	import { Button } from '$lib/components/ui/button';
-	import { signIn } from '$lib/auth-client';
-	import { page } from '$app/state';
-	import { _ } from 'svelte-i18n';
+	import { HugeiconsIcon } from '@hugeicons/svelte';
+
 	async function onConfirm() {
 		await signIn.social({
-			provider: 'google',
+			provider: 'discord',
 			callbackURL: `${page.url.pathname}?signIn=1`
 		});
 	}
@@ -36,12 +40,8 @@
 				variant="outline"
 				onclick={() => onConfirm()}
 			>
-				<img
-					class="h-5 w-5"
-					src="https://lh3.googleusercontent.com/COxitqgJr1sJnIDe8-jiKhxDx1FrYbtRHKJ9z_hELisAlapwE9LUPh6fcXIfb5vwpbMl4xl9H9TRFPc5NOO8Sb3VSgIBrfRYvW6cUA"
-					alt="Google"
-				/>
-				<span>{$_('sign_in.form.services.google')}</span>
+				<HugeiconsIcon icon={DiscordIcon} />
+				<span>{$_('sign_in.form.services.discord')}</span>
 			</Button>
 
 			<p class="text-muted-foreground text-center text-xs">

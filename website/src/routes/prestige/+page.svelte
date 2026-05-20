@@ -1,143 +1,134 @@
 <script lang="ts">
-import {
-	Alert02Icon,
-	ArrowRight01Icon,
-	Loading03Icon,
-	StarIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/svelte";
-import { onMount } from "svelte";
-import { toast } from "svelte-sonner";
-import ProfileBadges from "$lib/components/self/ProfileBadges.svelte";
-import SEO from "$lib/components/self/SEO.svelte";
-import SignInConfirmDialog from "$lib/components/self/SignInConfirmDialog.svelte";
-import PrestigeSkeleton from "$lib/components/self/skeletons/PrestigeSkeleton.svelte";
-import { Alert, AlertDescription } from "$lib/components/ui/alert";
-import * as Avatar from "$lib/components/ui/avatar";
-import { Button } from "$lib/components/ui/button";
-import * as Card from "$lib/components/ui/card";
-import * as Dialog from "$lib/components/ui/dialog";
-import { Input } from "$lib/components/ui/input";
-import { Label } from "$lib/components/ui/label";
-import { Progress } from "$lib/components/ui/progress";
-import { haptic } from "$lib/stores/haptics";
-import { USER_DATA } from "$lib/stores/user-data";
-import {
-	formatValue,
-	getPublicUrl,
-	PRESTIGE_COLORS,
-	PRESTIGE_COSTS,
-	PRESTIGE_NAMES,
-} from "$lib/utils";
+	import {
+		Alert02Icon,
+		ArrowRight01Icon,
+		Loading03Icon,
+		StarIcon
+	} from '@hugeicons/core-free-icons';
+	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import { onMount } from 'svelte';
+	import { toast } from 'svelte-sonner';
+	import ProfileBadges from '$lib/components/self/ProfileBadges.svelte';
+	import SEO from '$lib/components/self/SEO.svelte';
+	import SignInConfirmDialog from '$lib/components/self/SignInConfirmDialog.svelte';
+	import PrestigeSkeleton from '$lib/components/self/skeletons/PrestigeSkeleton.svelte';
+	import { Alert, AlertDescription } from '$lib/components/ui/alert';
+	import * as Avatar from '$lib/components/ui/avatar';
+	import { Button } from '$lib/components/ui/button';
+	import * as Card from '$lib/components/ui/card';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
+	import { Progress } from '$lib/components/ui/progress';
+	import { haptic } from '$lib/stores/haptics';
+	import { USER_DATA } from '$lib/stores/user-data';
+	import {
+		formatValue,
+		getPublicUrl,
+		PRESTIGE_COLORS,
+		PRESTIGE_COSTS,
+		PRESTIGE_NAMES
+	} from '$lib/utils';
 
-let isPrestiging = $state(false);
-let error = $state("");
-const shouldSignIn = $state(false);
-let loading = $state(true);
-let showConfirmDialog = $state(false);
-let confirmationText = $state("");
-let prestigeData = $state<any>(null);
+	let isPrestiging = $state(false);
+	let error = $state('');
+	let shouldSignIn = $state(false);
+	let loading = $state(true);
+	let showConfirmDialog = $state(false);
+	let confirmationText = $state('');
+	let prestigeData = $state<any>(null);
 
-const userData = $derived($USER_DATA);
+	const userData = $derived($USER_DATA);
 
-const currentPrestige = $derived(prestigeData?.profile?.prestigeLevel || 0);
-const nextPrestige = $derived(currentPrestige + 1);
-const prestigeCost = $derived.by(() => {
-	if (!prestigeData) return null;
-	const nextLevel = currentPrestige + 1;
-	return PRESTIGE_COSTS[nextLevel as keyof typeof PRESTIGE_COSTS] || null;
-});
-const prestigeName = $derived.by(() => {
-	if (!prestigeData) return null;
-	const nextLevel = currentPrestige + 1;
-	return PRESTIGE_NAMES[nextLevel as keyof typeof PRESTIGE_NAMES] || null;
-});
-const currentBalance = $derived(
-	prestigeData?.profile?.baseCurrencyBalance || 0,
-);
-const holdingsValue = $derived(prestigeData?.stats?.holdingsValue || 0);
-const totalValue = $derived(prestigeData?.profile?.totalPortfolioValue || 0);
-const canAfford = $derived(
-	prestigeCost ? currentBalance >= prestigeCost : false,
-);
-const hasMaxPrestige = $derived(!prestigeCost);
-const progressPercentage = $derived(
-	prestigeCost ? Math.min((currentBalance / prestigeCost) * 100, 100) : 100,
-);
-const amountNeeded = $derived(
-	prestigeCost ? Math.max(prestigeCost - currentBalance, 0) : 0,
-);
+	const currentPrestige = $derived(prestigeData?.profile?.prestigeLevel || 0);
+	const nextPrestige = $derived(currentPrestige + 1);
+	const prestigeCost = $derived.by(() => {
+		if (!prestigeData) return null;
+		const nextLevel = currentPrestige + 1;
+		return PRESTIGE_COSTS[nextLevel as keyof typeof PRESTIGE_COSTS] || null;
+	});
+	const prestigeName = $derived.by(() => {
+		if (!prestigeData) return null;
+		const nextLevel = currentPrestige + 1;
+		return PRESTIGE_NAMES[nextLevel as keyof typeof PRESTIGE_NAMES] || null;
+	});
+	const currentBalance = $derived(prestigeData?.profile?.baseCurrencyBalance || 0);
+	const holdingsValue = $derived(prestigeData?.stats?.holdingsValue || 0);
+	const totalValue = $derived(prestigeData?.profile?.totalPortfolioValue || 0);
+	const canAfford = $derived(prestigeCost ? currentBalance >= prestigeCost : false);
+	const hasMaxPrestige = $derived(!prestigeCost);
+	const progressPercentage = $derived(
+		prestigeCost ? Math.min((currentBalance / prestigeCost) * 100, 100) : 100
+	);
+	const amountNeeded = $derived(prestigeCost ? Math.max(prestigeCost - currentBalance, 0) : 0);
 
-onMount(async () => {
-	await fetchPrestigeData();
-	loading = false;
-});
-
-async function fetchPrestigeData() {
-	if (!userData) return;
-
-	try {
-		const response = await fetch("/api/prestige");
-		if (!response.ok) throw new Error("Failed to fetch prestige data");
-		prestigeData = await response.json();
-	} catch (e) {
-		console.error("Failed to fetch prestige data:", e);
-		toast.error("Failed to load prestige data");
-	}
-}
-
-async function handlePrestige() {
-	if (!canAfford || !userData) return;
-
-	isPrestiging = true;
-	error = "";
-
-	try {
-		const response = await fetch("/api/prestige", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
-
-		const result = await response.json();
-
-		if (!response.ok) {
-			throw new Error(result.message || "Failed to prestige");
-		}
-
-		haptic.trigger("heavy");
-		toast.success(`Congratulations! You've reached ${prestigeName}!`);
+	onMount(async () => {
 		await fetchPrestigeData();
-	} catch (err) {
-		const errorMessage =
-			err instanceof Error ? err.message : "An error occurred";
-		error = errorMessage;
-		haptic.trigger("error");
-		toast.error(errorMessage);
-	} finally {
-		isPrestiging = false;
-		showConfirmDialog = false;
-		confirmationText = "";
+		loading = false;
+	});
+
+	async function fetchPrestigeData() {
+		if (!userData) return;
+
+		try {
+			const response = await fetch('/api/prestige');
+			if (!response.ok) throw new Error('Failed to fetch prestige data');
+			prestigeData = await response.json();
+		} catch (e) {
+			console.error('Failed to fetch prestige data:', e);
+			toast.error('Failed to load prestige data');
+		}
 	}
-}
 
-function openConfirmDialog() {
-	if (!canAfford || !userData) return;
-	haptic.trigger("warning");
-	showConfirmDialog = true;
-}
+	async function handlePrestige() {
+		if (!canAfford || !userData) return;
 
-function closeConfirmDialog() {
-	showConfirmDialog = false;
-	confirmationText = "";
-}
-$effect(() => {
-	console.log(currentPrestige);
-});
-const canConfirmPrestige = $derived(
-	confirmationText.toUpperCase() === "PRESTIGE",
-);
+		isPrestiging = true;
+		error = '';
+
+		try {
+			const response = await fetch('/api/prestige', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			});
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.message || 'Failed to prestige');
+			}
+
+			haptic.trigger('heavy');
+			toast.success(`Congratulations! You've reached ${prestigeName}!`);
+			await fetchPrestigeData();
+		} catch (err) {
+			const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+			error = errorMessage;
+			haptic.trigger('error');
+			toast.error(errorMessage);
+		} finally {
+			isPrestiging = false;
+			showConfirmDialog = false;
+			confirmationText = '';
+		}
+	}
+
+	function openConfirmDialog() {
+		if (!canAfford || !userData) return;
+		haptic.trigger('warning');
+		showConfirmDialog = true;
+	}
+
+	function closeConfirmDialog() {
+		showConfirmDialog = false;
+		confirmationText = '';
+	}
+	$effect(() => {
+		console.log(currentPrestige);
+	});
+	const canConfirmPrestige = $derived(confirmationText.toUpperCase() === 'PRESTIGE');
 </script>
 
 <SEO

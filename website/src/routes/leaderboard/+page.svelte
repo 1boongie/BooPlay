@@ -1,270 +1,265 @@
 <script lang="ts">
-import {
-	Award01Icon,
-	Calendar01Icon,
-	Cancel01Icon,
-	CrownIcon,
-	Refresh01Icon,
-	Search01Icon,
-	SkullIcon,
-	Target01Icon,
-	TradeDownIcon,
-	Wallet01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/svelte";
-import { onMount } from "svelte";
-import { _ } from "svelte-i18n";
-import { toast } from "svelte-sonner";
-import { goto } from "$app/navigation";
-import DataTable from "$lib/components/self/DataTable.svelte";
-import ProfileBadges from "$lib/components/self/ProfileBadges.svelte";
-import SEO from "$lib/components/self/SEO.svelte";
-import LeaderboardSearchSkeleton from "$lib/components/self/skeletons/LeaderboardSearchSkeleton.svelte";
-import LeaderboardSkeleton from "$lib/components/self/skeletons/LeaderboardSkeleton.svelte";
-import UserName from "$lib/components/self/UserName.svelte";
-import * as Avatar from "$lib/components/ui/avatar";
-import { Button } from "$lib/components/ui/button";
-import * as Card from "$lib/components/ui/card";
-import Input from "$lib/components/ui/input/input.svelte";
-import { formatValue, getPublicUrl } from "$lib/utils";
+	import {
+		Award01Icon,
+		Calendar01Icon,
+		Cancel01Icon,
+		CrownIcon,
+		Refresh01Icon,
+		Search01Icon,
+		SkullIcon,
+		Target01Icon,
+		TradeDownIcon,
+		Wallet01Icon
+	} from '@hugeicons/core-free-icons';
+	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import { onMount } from 'svelte';
+	import { _ } from 'svelte-i18n';
+	import { toast } from 'svelte-sonner';
+	import { goto } from '$app/navigation';
+	import DataTable from '$lib/components/self/DataTable.svelte';
+	import ProfileBadges from '$lib/components/self/ProfileBadges.svelte';
+	import SEO from '$lib/components/self/SEO.svelte';
+	import LeaderboardSearchSkeleton from '$lib/components/self/skeletons/LeaderboardSearchSkeleton.svelte';
+	import LeaderboardSkeleton from '$lib/components/self/skeletons/LeaderboardSkeleton.svelte';
+	import UserName from '$lib/components/self/UserName.svelte';
+	import * as Avatar from '$lib/components/ui/avatar';
+	import { Button } from '$lib/components/ui/button';
+	import * as Card from '$lib/components/ui/card';
+	import Input from '$lib/components/ui/input/input.svelte';
+	import { formatValue, getPublicUrl } from '$lib/utils';
 
-const searchOffset = $state(0);
-let searchQuery = $state("");
-let searchQueryValue = $state("");
-let searchQueryTimeout = $state<NodeJS.Timeout | null>(null);
-let leaderboardData = $state<any>(null);
-let loading = $state(true);
+	let searchOffset = $state(0);
+	let searchQuery = $state('');
+	let searchQueryValue = $state('');
+	let searchQueryTimeout = $state<NodeJS.Timeout | null>(null);
+	let leaderboardData = $state<any>(null);
+	let loading = $state(true);
 
-onMount(async () => {
-	const urlParams = new URLSearchParams(window.location.search);
-	const search = urlParams.get("search");
+	onMount(async () => {
+		const urlParams = new URLSearchParams(window.location.search);
+		const search = urlParams.get('search');
 
-	searchQuery = search || "";
-	searchQueryValue = search || "";
+		searchQuery = search || '';
+		searchQueryValue = search || '';
 
-	await fetchLeaderboardData();
-});
+		await fetchLeaderboardData();
+	});
 
-function handleSearchKeydown(event: KeyboardEvent) {
-	if (!/^[a-zA-Z0-9]$/.test(event.key) && event.key !== "Enter") {
-		return;
-	}
-	if (searchQueryTimeout) {
-		clearTimeout(searchQueryTimeout);
-	}
-
-	if (event.key === "Enter") {
-		searchQueryValue = searchQuery;
-		fetchLeaderboardData();
-		return;
-	}
-
-	searchQueryTimeout = setTimeout(() => {
-		searchQueryValue = searchQuery;
-		fetchLeaderboardData();
-	}, 500);
-}
-
-async function fetchLeaderboardData(offset = 0) {
-	loading = true;
-	try {
-		const response = await fetch(
-			`/api/leaderboard?search=${searchQueryValue}&offset=${offset}`,
-		);
-		if (response.ok) {
-			leaderboardData = await response.json();
-		} else {
-			toast.error("Failed to load leaderboard data");
+	function handleSearchKeydown(event: KeyboardEvent) {
+		if (!/^[a-zA-Z0-9]$/.test(event.key) && event.key !== 'Enter') {
+			return;
 		}
-	} catch (e) {
-		console.error("Failed to fetch leaderboard data:", e);
-		toast.error("Failed to load leaderboard data");
-	} finally {
-		loading = false;
+		if (searchQueryTimeout) {
+			clearTimeout(searchQueryTimeout);
+		}
+
+		if (event.key === 'Enter') {
+			searchQueryValue = searchQuery;
+			fetchLeaderboardData();
+			return;
+		}
+
+		searchQueryTimeout = setTimeout(() => {
+			searchQueryValue = searchQuery;
+			fetchLeaderboardData();
+		}, 500);
 	}
-}
 
-function getRankIcon(index: number) {
-	switch (index) {
-		case 0:
-			return { icon: CrownIcon, color: "text-yellow-500" };
-		case 1:
-			return { icon: Award01Icon, color: "text-gray-400" };
-		case 2:
-			return { icon: Award01Icon, color: "text-orange-600" };
-		default:
-			return { icon: Target01Icon, color: "text-muted-foreground" };
+	async function fetchLeaderboardData(offset = 0) {
+		loading = true;
+		try {
+			const response = await fetch(`/api/leaderboard?search=${searchQueryValue}&offset=${offset}`);
+			if (response.ok) {
+				leaderboardData = await response.json();
+			} else {
+				toast.error('Failed to load leaderboard data');
+			}
+		} catch (e) {
+			console.error('Failed to fetch leaderboard data:', e);
+			toast.error('Failed to load leaderboard data');
+		} finally {
+			loading = false;
+		}
 	}
-}
 
-function getLiquidityWarning(liquidityRatio: number) {
-	if (liquidityRatio < 0.1)
-		return { text: "90%+ illiquid", color: "text-destructive" };
-	if (liquidityRatio < 0.3)
-		return { text: "70%+ illiquid", color: "text-orange-600" };
-	if (liquidityRatio < 0.5)
-		return { text: "50%+ illiquid", color: "text-yellow-600" };
-	return { text: "Mostly liquid", color: "text-success" };
-}
+	function getRankIcon(index: number) {
+		switch (index) {
+			case 0:
+				return { icon: CrownIcon, color: 'text-yellow-500' };
+			case 1:
+				return { icon: Award01Icon, color: 'text-gray-400' };
+			case 2:
+				return { icon: Award01Icon, color: 'text-orange-600' };
+			default:
+				return { icon: Target01Icon, color: 'text-muted-foreground' };
+		}
+	}
 
-const searchColumns = [
-	{
-		key: "user",
-		label: "User",
-		render: (value: any, row: any) => ({
-			component: "user",
-			image: row.image,
-			name: row.name,
-			username: row.username,
-			nameColor: row.nameColor,
-		}),
-	},
-];
+	function getLiquidityWarning(liquidityRatio: number) {
+		if (liquidityRatio < 0.1) return { text: '90%+ illiquid', color: 'text-destructive' };
+		if (liquidityRatio < 0.3) return { text: '70%+ illiquid', color: 'text-orange-600' };
+		if (liquidityRatio < 0.5) return { text: '50%+ illiquid', color: 'text-yellow-600' };
+		return { text: 'Mostly liquid', color: 'text-success' };
+	}
 
-const rugpullersColumns = [
-	{
-		key: "rank",
-		label: "Rank",
-		render: (value: any, row: any, index: number) => {
-			const rankInfo = getRankIcon(index);
-			return {
-				component: "rank",
-				icon: rankInfo.icon,
-				color: rankInfo.color,
-				number: index + 1,
-			};
+	const searchColumns = [
+		{
+			key: 'user',
+			label: 'User',
+			render: (value: any, row: any) => ({
+				component: 'user',
+				image: row.image,
+				name: row.name,
+				username: row.username,
+				nameColor: row.nameColor
+			})
+		}
+	];
+
+	const rugpullersColumns = [
+		{
+			key: 'rank',
+			label: 'Rank',
+			render: (value: any, row: any, index: number) => {
+				const rankInfo = getRankIcon(index);
+				return {
+					component: 'rank',
+					icon: rankInfo.icon,
+					color: rankInfo.color,
+					number: index + 1
+				};
+			}
 		},
-	},
-	{
-		key: "user",
-		label: "User",
-		render: (value: any, row: any) => ({
-			component: "user",
-			image: row.image,
-			name: row.name,
-			username: row.username,
-			nameColor: row.nameColor,
-		}),
-	},
-	{
-		key: "totalExtracted",
-		label: "Profit",
-		class: "text-success font-mono text-sm font-bold",
-		render: (value: any) => formatValue(value),
-	},
-];
+		{
+			key: 'user',
+			label: 'User',
+			render: (value: any, row: any) => ({
+				component: 'user',
+				image: row.image,
+				name: row.name,
+				username: row.username,
+				nameColor: row.nameColor
+			})
+		},
+		{
+			key: 'totalExtracted',
+			label: 'Profit',
+			class: 'text-success font-mono text-sm font-bold',
+			render: (value: any) => formatValue(value)
+		}
+	];
 
-const losersColumns = [
-	{
-		key: "rank",
-		label: "Rank",
-		render: (value: any, row: any, index: number) => {
-			const rankInfo = getRankIcon(index);
-			return {
-				component: "rank",
-				icon: rankInfo.icon,
-				color: rankInfo.color,
-				number: index + 1,
-			};
+	const losersColumns = [
+		{
+			key: 'rank',
+			label: 'Rank',
+			render: (value: any, row: any, index: number) => {
+				const rankInfo = getRankIcon(index);
+				return {
+					component: 'rank',
+					icon: rankInfo.icon,
+					color: rankInfo.color,
+					number: index + 1
+				};
+			}
 		},
-	},
-	{
-		key: "user",
-		label: "User",
-		render: (value: any, row: any) => ({
-			component: "user",
-			image: row.image,
-			name: row.name,
-			username: row.username,
-			nameColor: row.nameColor,
-		}),
-	},
-	{
-		key: "totalLoss",
-		label: "Loss",
-		class: "text-destructive font-mono text-sm font-bold",
-		render: (value: any) => `-${formatValue(value)}`,
-	},
-];
+		{
+			key: 'user',
+			label: 'User',
+			render: (value: any, row: any) => ({
+				component: 'user',
+				image: row.image,
+				name: row.name,
+				username: row.username,
+				nameColor: row.nameColor
+			})
+		},
+		{
+			key: 'totalLoss',
+			label: 'Loss',
+			class: 'text-destructive font-mono text-sm font-bold',
+			render: (value: any) => `-${formatValue(value)}`
+		}
+	];
 
-const cashKingsColumns = [
-	{
-		key: "rank",
-		label: "Rank",
-		render: (value: any, row: any, index: number) => {
-			const rankInfo = getRankIcon(index);
-			return {
-				component: "rank",
-				icon: rankInfo.icon,
-				color: rankInfo.color,
-				number: index + 1,
-			};
+	const cashKingsColumns = [
+		{
+			key: 'rank',
+			label: 'Rank',
+			render: (value: any, row: any, index: number) => {
+				const rankInfo = getRankIcon(index);
+				return {
+					component: 'rank',
+					icon: rankInfo.icon,
+					color: rankInfo.color,
+					number: index + 1
+				};
+			}
 		},
-	},
-	{
-		key: "user",
-		label: "User",
-		render: (value: any, row: any) => ({
-			component: "user",
-			image: row.image,
-			name: row.name,
-			username: row.username,
-			nameColor: row.nameColor,
-		}),
-	},
-	{
-		key: "baseCurrencyBalance",
-		label: "Cash",
-		class: "text-success font-mono text-sm font-bold",
-		render: (value: any) => formatValue(value),
-	},
-];
+		{
+			key: 'user',
+			label: 'User',
+			render: (value: any, row: any) => ({
+				component: 'user',
+				image: row.image,
+				name: row.name,
+				username: row.username,
+				nameColor: row.nameColor
+			})
+		},
+		{
+			key: 'baseCurrencyBalance',
+			label: 'Cash',
+			class: 'text-success font-mono text-sm font-bold',
+			render: (value: any) => formatValue(value)
+		}
+	];
 
-const millionairesColumns = [
-	{
-		key: "rank",
-		label: "Rank",
-		render: (value: any, row: any, index: number) => {
-			const rankInfo = getRankIcon(index);
-			return {
-				component: "rank",
-				icon: rankInfo.icon,
-				color: rankInfo.color,
-				number: index + 1,
-			};
+	const millionairesColumns = [
+		{
+			key: 'rank',
+			label: 'Rank',
+			render: (value: any, row: any, index: number) => {
+				const rankInfo = getRankIcon(index);
+				return {
+					component: 'rank',
+					icon: rankInfo.icon,
+					color: rankInfo.color,
+					number: index + 1
+				};
+			}
 		},
-	},
-	{
-		key: "user",
-		label: "User",
-		render: (value: any, row: any) => ({
-			component: "user",
-			image: row.image,
-			name: row.name,
-			username: row.username,
-			nameColor: row.nameColor,
-		}),
-	},
-	{
-		key: "totalPortfolioValue",
-		label: "Portfolio",
-		class: "text-success font-mono text-sm font-bold",
-		render: (value: any) => formatValue(value),
-	},
-	{
-		key: "liquidityRatio",
-		label: "Liquidity",
-		render: (value: any) => {
-			const info = getLiquidityWarning(value);
-			return {
-				component: "badge",
-				variant: "secondary",
-				class: `text-xs ${info.color}`,
-				text: info.text,
-			};
+		{
+			key: 'user',
+			label: 'User',
+			render: (value: any, row: any) => ({
+				component: 'user',
+				image: row.image,
+				name: row.name,
+				username: row.username,
+				nameColor: row.nameColor
+			})
 		},
-	},
-];
+		{
+			key: 'totalPortfolioValue',
+			label: 'Portfolio',
+			class: 'text-success font-mono text-sm font-bold',
+			render: (value: any) => formatValue(value)
+		},
+		{
+			key: 'liquidityRatio',
+			label: 'Liquidity',
+			render: (value: any) => {
+				const info = getLiquidityWarning(value);
+				return {
+					component: 'badge',
+					variant: 'secondary',
+					class: `text-xs ${info.color}`,
+					text: info.text
+				};
+			}
+		}
+	];
 </script>
 
 <SEO

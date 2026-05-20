@@ -36,7 +36,7 @@
 	let probabilityData = $state(data.probabilityData);
 
 	// Betting form
-	const betSide = $state<boolean>(true);
+	let betSide = $state<boolean>(true);
 	let placingBet = $state(false);
 	let customBetAmount = $state('');
 
@@ -49,7 +49,7 @@
 	});
 
 	// Chart related
-	const chartContainer = $state<HTMLDivElement>();
+	let chartContainer = $state<HTMLDivElement>();
 	let chart: IChartApi | null = null;
 	let lineSeries: any = null;
 

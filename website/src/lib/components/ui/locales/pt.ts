@@ -226,7 +226,7 @@ export default {
 			description:
 				'Escolha um serviço para logar com. Sua conta será criada imediatamente se não tiver uma.',
 			services: {
-				google: 'Continuar com Google'
+				discord: 'Continuar com Discord'
 			},
 			terms: [
 				'Ao continuar, você concorda com nossos',

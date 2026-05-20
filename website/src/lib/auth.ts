@@ -10,8 +10,8 @@ import * as schema from './server/db/schema';
 import { uploadProfilePicture } from './server/s3';
 import { generateUsername } from './utils/random';
 
-if (!privateEnv.GOOGLE_CLIENT_ID) throw new Error('GOOGLE_CLIENT_ID is not set');
-if (!privateEnv.GOOGLE_CLIENT_SECRET) throw new Error('GOOGLE_CLIENT_SECRET is not set');
+if (!privateEnv.DISCORD_CLIENT_ID) throw new Error('DISCORD_CLIENT_ID is not set');
+if (!privateEnv.DISCORD_CLIENT_SECRET) throw new Error('DISCORD_CLIENT_SECRET is not set');
 if (!publicEnv.PUBLIC_BETTER_AUTH_URL) throw new Error('PUBLIC_BETTER_AUTH_URL is not set');
 
 export const auth = betterAuth({
@@ -21,8 +21,8 @@ export const auth = betterAuth({
 
 	trustedOrigins: [
 		publicEnv.PUBLIC_BETTER_AUTH_URL,
-		'https://xprismplay.dpdns.org',
-		'http://xprismplay.dpdns.org',
+		'https://booplay.fun',
+		'http://booplay.fun',
 		'http://localhost:5173',
 		'http://localhost:4173'
 	],
@@ -47,15 +47,15 @@ export const auth = betterAuth({
 		schema: schema
 	}),
 	socialProviders: {
-		google: {
-			clientId: privateEnv.GOOGLE_CLIENT_ID,
-			clientSecret: privateEnv.GOOGLE_CLIENT_SECRET,
-			redirectURI: `${publicEnv.PUBLIC_BETTER_AUTH_URL}/api/auth/callback/google`, //ADDED!!
+		discord: {
+			clientId: privateEnv.DISCORD_CLIENT_ID,
+			clientSecret: privateEnv.DISCORD_CLIENT_SECRET,
+			redirectURI: `${publicEnv.PUBLIC_BETTER_AUTH_URL}/api/auth/callback/discord`, //ADDED!!
 			mapProfileToUser: async (profile) => {
 				const newUsername = generateUsername();
-				let s3ImageKey: string | null = null;
+				const _s3ImageKey: string | null = null;
 
-				if (profile.picture) {
+				/*if (profile.picture) {
 					try {
 						const response = await fetch(profile.picture);
 						if (!response.ok) {
@@ -72,12 +72,12 @@ export const auth = betterAuth({
 					} catch (error) {
 						console.error('Failed to upload profile picture during social login:', error);
 					}
-				}
+				}*/
 
 				return {
-					name: profile.name,
+					name: profile.display_name || profile.username,
 					email: profile.email,
-					image: s3ImageKey,
+					image: null, //s3ImageKey,
 					username: newUsername
 				};
 			}

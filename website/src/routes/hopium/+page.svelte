@@ -1,155 +1,137 @@
 <script lang="ts">
-import {
-	Add01Icon,
-	Cancel01Icon,
-	Clock01Icon,
-	Globe02Icon,
-	Loading03Icon,
-	SparklesIcon,
-	Tick01Icon,
-	TradeDownIcon,
-	TradeUpIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/svelte";
-import { onMount } from "svelte";
-import { toast } from "svelte-sonner";
-import { goto } from "$app/navigation";
-import SEO from "$lib/components/self/SEO.svelte";
-import HopiumSkeleton from "$lib/components/self/skeletons/HopiumSkeleton.svelte";
-import UserName from "$lib/components/self/UserName.svelte";
-import UserProfilePreview from "$lib/components/self/UserProfilePreview.svelte";
-import * as Avatar from "$lib/components/ui/avatar";
-import { Badge } from "$lib/components/ui/badge";
-import { Button } from "$lib/components/ui/button";
-import * as Card from "$lib/components/ui/card";
-import * as Dialog from "$lib/components/ui/dialog";
-import * as HoverCard from "$lib/components/ui/hover-card";
-import { Input } from "$lib/components/ui/input";
-import { Label } from "$lib/components/ui/label";
-import { haptic } from "$lib/stores/haptics";
-import {
-	fetchPortfolioSummary,
-	PORTFOLIO_SUMMARY,
-} from "$lib/stores/portfolio-data";
-import { USER_DATA } from "$lib/stores/user-data";
-import type { PredictionQuestion } from "$lib/types/prediction";
-import {
-	formatDateWithYear,
-	formatTimeUntil,
-	formatValue,
-	getPublicUrl,
-} from "$lib/utils";
+	import {
+		Add01Icon,
+		Cancel01Icon,
+		Clock01Icon,
+		Globe02Icon,
+		Loading03Icon,
+		SparklesIcon,
+		Tick01Icon,
+		TradeDownIcon,
+		TradeUpIcon
+	} from '@hugeicons/core-free-icons';
+	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import { onMount } from 'svelte';
+	import { toast } from 'svelte-sonner';
+	import { goto } from '$app/navigation';
+	import SEO from '$lib/components/self/SEO.svelte';
+	import HopiumSkeleton from '$lib/components/self/skeletons/HopiumSkeleton.svelte';
+	import UserName from '$lib/components/self/UserName.svelte';
+	import UserProfilePreview from '$lib/components/self/UserProfilePreview.svelte';
+	import * as Avatar from '$lib/components/ui/avatar';
+	import { Badge } from '$lib/components/ui/badge';
+	import { Button } from '$lib/components/ui/button';
+	import * as Card from '$lib/components/ui/card';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import * as HoverCard from '$lib/components/ui/hover-card';
+	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
+	import { haptic } from '$lib/stores/haptics';
+	import { fetchPortfolioSummary, PORTFOLIO_SUMMARY } from '$lib/stores/portfolio-data';
+	import { USER_DATA } from '$lib/stores/user-data';
+	import type { PredictionQuestion } from '$lib/types/prediction';
+	import { formatDateWithYear, formatTimeUntil, formatValue, getPublicUrl } from '$lib/utils';
 
-let questions = $state<PredictionQuestion[]>([]);
-let loading = $state(true);
-const activeTab = $state("active");
-let showCreateDialog = $state(false);
+	let questions = $state<PredictionQuestion[]>([]);
+	let loading = $state(true);
+	let activeTab = $state('active');
+	let showCreateDialog = $state(false);
 
-// Create question form
-let newQuestion = $state("");
-let creatingQuestion = $state(false);
+	// Create question form
+	let newQuestion = $state('');
+	let creatingQuestion = $state(false);
 
-const userBalance = $derived(
-	$PORTFOLIO_SUMMARY ? $PORTFOLIO_SUMMARY.baseCurrencyBalance : 0,
-);
+	const userBalance = $derived($PORTFOLIO_SUMMARY ? $PORTFOLIO_SUMMARY.baseCurrencyBalance : 0);
 
-onMount(() => {
-	fetchQuestions();
-	if ($USER_DATA) {
-		fetchPortfolioSummary();
-	}
-});
-
-async function fetchQuestions() {
-	try {
-		const status =
-			activeTab === "active"
-				? "ACTIVE"
-				: activeTab === "resolved"
-					? "RESOLVED"
-					: "ALL";
-
-		// TODO: PAGINATION
-		const response = await fetch(
-			`/api/hopium/questions?status=${status}&limit=50`,
-		);
-		if (response.ok) {
-			const data = await response.json();
-			questions = data.questions;
-		} else {
-			toast.error("Failed to load questions");
-		}
-	} catch (e) {
-		console.error("Failed to fetch questions:", e);
-		toast.error("Failed to load questions");
-	} finally {
-		loading = false;
-	}
-}
-
-async function createQuestion() {
-	if (!newQuestion.trim()) {
-		toast.error("Please enter a question");
-		return;
-	}
-
-	creatingQuestion = true;
-	try {
-		const response = await fetch("/api/hopium/questions/create", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({
-				question: newQuestion,
-			}),
-		});
-
-		const result = await response.json();
-		if (response.ok) {
-			haptic.trigger("success");
-			toast.success("Question created successfully!");
-			showCreateDialog = false;
-			newQuestion = "";
-			fetchQuestions();
-			fetchPortfolioSummary();
-		} else {
-			toast.error(result.error || "Failed to create question", {
-				duration: 20000,
-			});
-		}
-	} catch (e) {
-		toast.error("Network error");
-	} finally {
-		creatingQuestion = false;
-	}
-}
-
-function handleCreateQuestion() {
-	if (!$USER_DATA) {
-		toast.error("You must be logged in to create a question");
-		return;
-	}
-	if (userBalance <= 100_000) {
-		toast.error(
-			"You need at least $100,000 in your portfolio (cash) to create a question.",
-		);
-		return;
-	}
-	showCreateDialog = true;
-}
-
-$effect(() => {
-	if (activeTab) {
-		loading = true;
+	onMount(() => {
 		fetchQuestions();
-	}
-});
+		if ($USER_DATA) {
+			fetchPortfolioSummary();
+		}
+	});
 
-// Custom tabs implementation
-const tabs = [
-	{ value: "active", label: "Active" },
-	{ value: "resolved", label: "Resolved" },
-	{ value: "all", label: "All" },
-];
+	async function fetchQuestions() {
+		try {
+			const status =
+				activeTab === 'active' ? 'ACTIVE' : activeTab === 'resolved' ? 'RESOLVED' : 'ALL';
+
+			// TODO: PAGINATION
+			const response = await fetch(`/api/hopium/questions?status=${status}&limit=50`);
+			if (response.ok) {
+				const data = await response.json();
+				questions = data.questions;
+			} else {
+				toast.error('Failed to load questions');
+			}
+		} catch (e) {
+			console.error('Failed to fetch questions:', e);
+			toast.error('Failed to load questions');
+		} finally {
+			loading = false;
+		}
+	}
+
+	async function createQuestion() {
+		if (!newQuestion.trim()) {
+			toast.error('Please enter a question');
+			return;
+		}
+
+		creatingQuestion = true;
+		try {
+			const response = await fetch('/api/hopium/questions/create', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					question: newQuestion
+				})
+			});
+
+			const result = await response.json();
+			if (response.ok) {
+				haptic.trigger('success');
+				toast.success('Question created successfully!');
+				showCreateDialog = false;
+				newQuestion = '';
+				fetchQuestions();
+				fetchPortfolioSummary();
+			} else {
+				toast.error(result.error || 'Failed to create question', {
+					duration: 20000
+				});
+			}
+		} catch (e) {
+			toast.error('Network error');
+		} finally {
+			creatingQuestion = false;
+		}
+	}
+
+	function handleCreateQuestion() {
+		if (!$USER_DATA) {
+			toast.error('You must be logged in to create a question');
+			return;
+		}
+		if (userBalance <= 100_000) {
+			toast.error('You need at least $100,000 in your portfolio (cash) to create a question.');
+			return;
+		}
+		showCreateDialog = true;
+	}
+
+	$effect(() => {
+		if (activeTab) {
+			loading = true;
+			fetchQuestions();
+		}
+	});
+
+	// Custom tabs implementation
+	const tabs = [
+		{ value: 'active', label: 'Active' },
+		{ value: 'resolved', label: 'Resolved' },
+		{ value: 'all', label: 'All' }
+	];
 </script>
 
 <SEO

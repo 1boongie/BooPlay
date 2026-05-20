@@ -123,7 +123,9 @@
 			<CardContent>
 				<div class="space-y-4">
 					<p class="text-muted-foreground text-sm">Rugplay Created by <strong>FaceDev</strong></p>
-					<p class="text-muted-foreground text-sm">XprismPlay Maintened by <strong>Xprism</strong></p>
+					<p class="text-muted-foreground text-sm">
+						XprismPlay Maintened by <strong>Xprism</strong>
+					</p>
 					<p class="text-muted-foreground text-sm">BooPlay Maintened by <strong>Boongie</strong></p>
 					<div class="flex flex-wrap gap-2">
 						<Button

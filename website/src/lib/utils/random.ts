@@ -1,3 +1,5 @@
+import { randomInt } from 'crypto';
+
 const adjectives = [
 	'happy',
 	'lucky',
@@ -10,11 +12,28 @@ const adjectives = [
 	'calm',
 	'kind'
 ];
-const nouns = ['panda', 'tiger', 'whale', 'eagle', 'lion', 'wolf', 'bear', 'fox', 'deer', 'seal'];
+const nouns = [
+	'panda',
+	'tiger',
+	'whale',
+	'eagle',
+	'lion',
+	'wolf',
+	'bear',
+	'fox',
+	'deer',
+	'seal',
+	'cart',
+	'gui',
+	'boongie',
+	'qwlit',
+	'male',
+	'female'
+];
 
 export function generateUsername(): string {
 	const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
 	const noun = nouns[Math.floor(Math.random() * nouns.length)];
-	const number = Math.floor(Math.random() * 9999);
+	const number = randomInt(1000, 9999);
 	return `${adj}_${noun}${number}`;
 }

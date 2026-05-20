@@ -1,587 +1,538 @@
 <script lang="ts">
-import {
-	Analytics01Icon,
-	Coins01Icon,
-	MoneyBag02Icon,
-	TradeDownIcon,
-	TradeUpIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/svelte";
-import {
-	CandlestickSeries,
-	ColorType,
-	createChart,
-	HistogramSeries,
-	type IChartApi,
-} from "lightweight-charts";
-import { onMount } from "svelte";
-import { _ } from "svelte-i18n";
-import { toast } from "svelte-sonner";
-import { goto } from "$app/navigation";
-import CoinIcon from "$lib/components/self/CoinIcon.svelte";
-import CommentSection from "$lib/components/self/CommentSection.svelte";
-import SEO from "$lib/components/self/SEO.svelte";
-import SignInConfirmDialog from "$lib/components/self/SignInConfirmDialog.svelte";
-import CoinSkeleton from "$lib/components/self/skeletons/CoinSkeleton.svelte";
-import TopHolders from "$lib/components/self/TopHolders.svelte";
-import TradeModal from "$lib/components/self/TradeModal.svelte";
-import UserName from "$lib/components/self/UserName.svelte";
-import UserProfilePreview from "$lib/components/self/UserProfilePreview.svelte";
-import * as Avatar from "$lib/components/ui/avatar";
-import { Badge } from "$lib/components/ui/badge";
-import { Button } from "$lib/components/ui/button";
-import * as Card from "$lib/components/ui/card";
-import * as HoverCard from "$lib/components/ui/hover-card";
-import * as Select from "$lib/components/ui/select";
-import { fetchPortfolioSummary } from "$lib/stores/portfolio-data";
-import { USER_DATA } from "$lib/stores/user-data";
-import {
-	isConnectedStore,
-	type PriceUpdate,
-	websocketController,
-} from "$lib/stores/websocket";
-import {
-	getPublicUrl,
-	getTimeframeInSeconds,
-	timeToLocal,
-} from "$lib/utils.js";
+	import {
+		Analytics01Icon,
+		Coins01Icon,
+		MoneyBag02Icon,
+		TradeDownIcon,
+		TradeUpIcon
+	} from '@hugeicons/core-free-icons';
+	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import {
+		CandlestickSeries,
+		ColorType,
+		createChart,
+		HistogramSeries,
+		type IChartApi
+	} from 'lightweight-charts';
+	import { onMount } from 'svelte';
+	import { _ } from 'svelte-i18n';
+	import { toast } from 'svelte-sonner';
+	import { goto } from '$app/navigation';
+	import CoinIcon from '$lib/components/self/CoinIcon.svelte';
+	import CommentSection from '$lib/components/self/CommentSection.svelte';
+	import SEO from '$lib/components/self/SEO.svelte';
+	import SignInConfirmDialog from '$lib/components/self/SignInConfirmDialog.svelte';
+	import CoinSkeleton from '$lib/components/self/skeletons/CoinSkeleton.svelte';
+	import TopHolders from '$lib/components/self/TopHolders.svelte';
+	import TradeModal from '$lib/components/self/TradeModal.svelte';
+	import UserName from '$lib/components/self/UserName.svelte';
+	import UserProfilePreview from '$lib/components/self/UserProfilePreview.svelte';
+	import * as Avatar from '$lib/components/ui/avatar';
+	import { Badge } from '$lib/components/ui/badge';
+	import { Button } from '$lib/components/ui/button';
+	import * as Card from '$lib/components/ui/card';
+	import * as HoverCard from '$lib/components/ui/hover-card';
+	import * as Select from '$lib/components/ui/select';
+	import { fetchPortfolioSummary } from '$lib/stores/portfolio-data';
+	import { USER_DATA } from '$lib/stores/user-data';
+	import { isConnectedStore, type PriceUpdate, websocketController } from '$lib/stores/websocket';
+	import { getPublicUrl, getTimeframeInSeconds, timeToLocal } from '$lib/utils.js';
 
-const { data } = $props();
-const coinSymbol = $derived(data.coinSymbol);
-let coin = $state(data.coin);
-let loading = $state(false);
-let chartData = $state(data.chartData);
-let volumeData = $state(data.volumeData);
-let oldestTimestamp = $state<number | null>(data.oldestTimestamp ?? null);
-let isLoadingHistory = $state(false);
-let noMoreHistory = $state(false);
-let userHolding = $state(0);
-const buyModalOpen = $state(false);
-const sellModalOpen = $state(false);
-const burnModalOpen = $state(false);
-let selectedTimeframe = $state(data.timeframe || "1m");
-let lastPriceUpdateTime = 0;
-const shouldSignIn = $state(false);
+	const { data } = $props();
+	const coinSymbol = $derived(data.coinSymbol);
+	let coin = $state(data.coin);
+	let loading = $state(false);
+	let chartData = $state(data.chartData);
+	let volumeData = $state(data.volumeData);
+	let oldestTimestamp = $state<number | null>(data.oldestTimestamp ?? null);
+	let isLoadingHistory = $state(false);
+	let noMoreHistory = $state(false);
+	let userHolding = $state(0);
+	let buyModalOpen = $state(false);
+	let sellModalOpen = $state(false);
+	let burnModalOpen = $state(false);
+	let selectedTimeframe = $state(data.timeframe || '1m');
+	let lastPriceUpdateTime = 0;
+	let shouldSignIn = $state(false);
 
-let previousCoinSymbol = $state<string | null>(null);
-let countdown = $state<number | null>(null);
-let countdownInterval = $state<NodeJS.Timeout | null>(null);
+	let previousCoinSymbol = $state<string | null>(null);
+	let countdown = $state<number | null>(null);
+	let countdownInterval = $state<NodeJS.Timeout | null>(null);
 
-const timeframeOptions = [
-	{ value: "1m", label: $_("coin.priceChart.1") },
-	{ value: "5m", label: $_("coin.priceChart.2") },
-	{ value: "15m", label: $_("coin.priceChart.3") },
-	{ value: "1h", label: $_("coin.priceChart.4") },
-	{ value: "4h", label: $_("coin.priceChart.5") },
-	{ value: "1d", label: $_("coin.priceChart.6") },
-];
+	const timeframeOptions = [
+		{ value: '1m', label: $_('coin.priceChart.1') },
+		{ value: '5m', label: $_('coin.priceChart.2') },
+		{ value: '15m', label: $_('coin.priceChart.3') },
+		{ value: '1h', label: $_('coin.priceChart.4') },
+		{ value: '4h', label: $_('coin.priceChart.5') },
+		{ value: '1d', label: $_('coin.priceChart.6') }
+	];
 
-$effect(() => {
-	coin = data.coin;
-	chartData = data.chartData;
-	volumeData = data.volumeData;
-	oldestTimestamp = data.oldestTimestamp ?? null;
-	noMoreHistory = false;
-	selectedTimeframe = data.timeframe || "1m";
-});
+	$effect(() => {
+		coin = data.coin;
+		chartData = data.chartData;
+		volumeData = data.volumeData;
+		oldestTimestamp = data.oldestTimestamp ?? null;
+		noMoreHistory = false;
+		selectedTimeframe = data.timeframe || '1m';
+	});
 
-onMount(async () => {
-	await loadUserHolding();
+	onMount(async () => {
+		await loadUserHolding();
 
-	websocketController.setCoin(coinSymbol.toUpperCase());
-	websocketController.subscribeToPriceUpdates(
-		coinSymbol.toUpperCase(),
-		handlePriceUpdate,
-	);
-
-	previousCoinSymbol = coinSymbol;
-});
-
-$effect(() => {
-	return () => {
-		if (previousCoinSymbol) {
-			websocketController.unsubscribeFromPriceUpdates(
-				previousCoinSymbol.toUpperCase(),
-			);
-		}
-	};
-});
-
-$effect(() => {
-	if (coinSymbol && previousCoinSymbol && coinSymbol !== previousCoinSymbol) {
-		websocketController.unsubscribeFromPriceUpdates(
-			previousCoinSymbol.toUpperCase(),
-		);
 		websocketController.setCoin(coinSymbol.toUpperCase());
-		websocketController.subscribeToPriceUpdates(
-			coinSymbol.toUpperCase(),
-			handlePriceUpdate,
-		);
-		loadUserHolding();
+		websocketController.subscribeToPriceUpdates(coinSymbol.toUpperCase(), handlePriceUpdate);
+
 		previousCoinSymbol = coinSymbol;
-	}
-});
+	});
 
-$effect(() => {
-	if (coin?.isLocked && coin?.tradingUnlocksAt) {
-		const unlockTime = new Date(coin.tradingUnlocksAt).getTime();
+	$effect(() => {
+		return () => {
+			if (previousCoinSymbol) {
+				websocketController.unsubscribeFromPriceUpdates(previousCoinSymbol.toUpperCase());
+			}
+		};
+	});
 
-		const updateCountdown = () => {
-			const now = Date.now();
-			const remaining = Math.max(0, Math.ceil((unlockTime - now) / 1000));
-			countdown = remaining;
+	$effect(() => {
+		if (coinSymbol && previousCoinSymbol && coinSymbol !== previousCoinSymbol) {
+			websocketController.unsubscribeFromPriceUpdates(previousCoinSymbol.toUpperCase());
+			websocketController.setCoin(coinSymbol.toUpperCase());
+			websocketController.subscribeToPriceUpdates(coinSymbol.toUpperCase(), handlePriceUpdate);
+			loadUserHolding();
+			previousCoinSymbol = coinSymbol;
+		}
+	});
 
-			if (remaining === 0 && countdownInterval) {
+	$effect(() => {
+		if (coin?.isLocked && coin?.tradingUnlocksAt) {
+			const unlockTime = new Date(coin.tradingUnlocksAt).getTime();
+
+			const updateCountdown = () => {
+				const now = Date.now();
+				const remaining = Math.max(0, Math.ceil((unlockTime - now) / 1000));
+				countdown = remaining;
+
+				if (remaining === 0 && countdownInterval) {
+					clearInterval(countdownInterval);
+					countdownInterval = null;
+					if (coin) {
+						coin = { ...coin, isLocked: false };
+					}
+				}
+			};
+
+			updateCountdown();
+			countdownInterval = setInterval(updateCountdown, 1000);
+		} else {
+			countdown = null;
+			if (countdownInterval) {
 				clearInterval(countdownInterval);
 				countdownInterval = null;
-				if (coin) {
-					coin = { ...coin, isLocked: false };
-				}
+			}
+		}
+
+		return () => {
+			if (countdownInterval) {
+				clearInterval(countdownInterval);
 			}
 		};
+	});
 
-		updateCountdown();
-		countdownInterval = setInterval(updateCountdown, 1000);
-	} else {
-		countdown = null;
-		if (countdownInterval) {
-			clearInterval(countdownInterval);
-			countdownInterval = null;
+	async function loadCoinData() {
+		try {
+			loading = true;
+			const response = await fetch(`/api/coin/${coinSymbol}?timeframe=${selectedTimeframe}`);
+
+			if (!response.ok) {
+				toast.error(response.status === 404 ? 'Coin not found' : 'Failed to load coin data');
+				return;
+			}
+
+			const result = await response.json();
+			coin = result.coin;
+			chartData = result.candlestickData || [];
+			volumeData = result.volumeData || [];
+			oldestTimestamp = result.oldestTimestamp ?? null;
+			noMoreHistory = false;
+		} catch (e) {
+			console.error('Failed to fetch coin data:', e);
+			toast.error('Failed to load coin data');
+		} finally {
+			loading = false;
 		}
 	}
 
-	return () => {
-		if (countdownInterval) {
-			clearInterval(countdownInterval);
-		}
-	};
-});
+	async function loadUserHolding() {
+		if (!$USER_DATA) return;
 
-async function loadCoinData() {
-	try {
+		try {
+			const response = await fetch('/api/portfolio/total');
+			if (response.ok) {
+				const result = await response.json();
+				const holding = result.coinHoldings.find((h: any) => h.symbol === coinSymbol.toUpperCase());
+				userHolding = holding ? holding.quantity : 0;
+			}
+		} catch (e) {
+			console.error('Failed to load user holding:', e);
+		}
+	}
+	async function handleTradeSuccess() {
+		await Promise.all([loadCoinData(), loadUserHolding(), fetchPortfolioSummary()]);
+	}
+	async function handleBurnSuccess() {
+		await Promise.all([loadCoinData(), loadUserHolding(), fetchPortfolioSummary()]);
+	}
+	function handlePriceUpdate(priceUpdate: PriceUpdate) {
+		if (coin && priceUpdate.coinSymbol === coinSymbol.toUpperCase()) {
+			// throttle updates to prevent excessive UI updates, 1s interval
+			const now = Date.now();
+			if (now - lastPriceUpdateTime < 1000) {
+				return;
+			}
+			lastPriceUpdateTime = now;
+
+			coin = {
+				...coin,
+				currentPrice: priceUpdate.currentPrice,
+				marketCap: priceUpdate.marketCap,
+				change24h: priceUpdate.change24h,
+				volume24h: priceUpdate.volume24h,
+				...(priceUpdate.poolCoinAmount !== undefined && {
+					poolCoinAmount: priceUpdate.poolCoinAmount
+				}),
+				...(priceUpdate.poolBaseCurrencyAmount !== undefined && {
+					poolBaseCurrencyAmount: priceUpdate.poolBaseCurrencyAmount
+				})
+			};
+
+			updateChartRealtime(priceUpdate.currentPrice);
+		}
+	}
+
+	function updateChartRealtime(newPrice: number) {
+		if (!candlestickSeries || !chart || chartData.length === 0) return;
+
+		const timeframeSeconds = getTimeframeInSeconds(selectedTimeframe);
+		const currentTime = Math.floor(Date.now() / 1000);
+
+		const currentCandleTime = Math.floor(currentTime / timeframeSeconds) * timeframeSeconds;
+		const localCandleTime = timeToLocal(currentCandleTime);
+
+		const lastCandle = chartData[chartData.length - 1];
+
+		if (lastCandle && lastCandle.time === localCandleTime) {
+			const updatedCandle = {
+				time: localCandleTime,
+				open: lastCandle.open,
+				high: Math.max(lastCandle.high, newPrice),
+				low: Math.min(lastCandle.low, newPrice),
+				close: newPrice
+			};
+
+			candlestickSeries.update(updatedCandle);
+			chartData[chartData.length - 1] = updatedCandle;
+		} else if (localCandleTime > (lastCandle?.time || 0)) {
+			const newCandle = {
+				time: localCandleTime,
+				open: newPrice,
+				high: newPrice,
+				low: newPrice,
+				close: newPrice
+			};
+
+			candlestickSeries.update(newCandle);
+			chartData.push(newCandle);
+		}
+	}
+
+	async function handleTimeframeChange(timeframe: string) {
+		selectedTimeframe = timeframe;
 		loading = true;
-		const response = await fetch(
-			`/api/coin/${coinSymbol}?timeframe=${selectedTimeframe}`,
-		);
 
-		if (!response.ok) {
-			toast.error(
-				response.status === 404 ? "Coin not found" : "Failed to load coin data",
-			);
-			return;
+		if (chart) {
+			chart.remove();
+			chart = null;
 		}
 
-		const result = await response.json();
-		coin = result.coin;
-		chartData = result.candlestickData || [];
-		volumeData = result.volumeData || [];
-		oldestTimestamp = result.oldestTimestamp ?? null;
-		noMoreHistory = false;
-	} catch (e) {
-		console.error("Failed to fetch coin data:", e);
-		toast.error("Failed to load coin data");
-	} finally {
+		await loadCoinData();
 		loading = false;
 	}
-}
 
-async function loadUserHolding() {
-	if (!$USER_DATA) return;
+	async function loadOlderChartData() {
+		if (isLoadingHistory || noMoreHistory || !oldestTimestamp || !candlestickSeries || !chart)
+			return;
 
-	try {
-		const response = await fetch("/api/portfolio/total");
-		if (response.ok) {
-			const result = await response.json();
-			const holding = result.coinHoldings.find(
-				(h: any) => h.symbol === coinSymbol.toUpperCase(),
+		isLoadingHistory = true;
+		try {
+			const response = await fetch(
+				`/api/coin/${coinSymbol}/chart-history?timeframe=${selectedTimeframe}&before=${oldestTimestamp}`
 			);
-			userHolding = holding ? holding.quantity : 0;
-		}
-	} catch (e) {
-		console.error("Failed to load user holding:", e);
-	}
-}
-async function handleTradeSuccess() {
-	await Promise.all([
-		loadCoinData(),
-		loadUserHolding(),
-		fetchPortfolioSummary(),
-	]);
-}
-async function handleBurnSuccess() {
-	await Promise.all([
-		loadCoinData(),
-		loadUserHolding(),
-		fetchPortfolioSummary(),
-	]);
-}
-function handlePriceUpdate(priceUpdate: PriceUpdate) {
-	if (coin && priceUpdate.coinSymbol === coinSymbol.toUpperCase()) {
-		// throttle updates to prevent excessive UI updates, 1s interval
-		const now = Date.now();
-		if (now - lastPriceUpdateTime < 1000) {
-			return;
-		}
-		lastPriceUpdateTime = now;
 
-		coin = {
-			...coin,
-			currentPrice: priceUpdate.currentPrice,
-			marketCap: priceUpdate.marketCap,
-			change24h: priceUpdate.change24h,
-			volume24h: priceUpdate.volume24h,
-			...(priceUpdate.poolCoinAmount !== undefined && {
-				poolCoinAmount: priceUpdate.poolCoinAmount,
-			}),
-			...(priceUpdate.poolBaseCurrencyAmount !== undefined && {
-				poolBaseCurrencyAmount: priceUpdate.poolBaseCurrencyAmount,
-			}),
-		};
+			if (!response.ok) return;
 
-		updateChartRealtime(priceUpdate.currentPrice);
-	}
-}
+			const result = await response.json();
 
-function updateChartRealtime(newPrice: number) {
-	if (!candlestickSeries || !chart || chartData.length === 0) return;
-
-	const timeframeSeconds = getTimeframeInSeconds(selectedTimeframe);
-	const currentTime = Math.floor(Date.now() / 1000);
-
-	const currentCandleTime =
-		Math.floor(currentTime / timeframeSeconds) * timeframeSeconds;
-	const localCandleTime = timeToLocal(currentCandleTime);
-
-	const lastCandle = chartData[chartData.length - 1];
-
-	if (lastCandle && lastCandle.time === localCandleTime) {
-		const updatedCandle = {
-			time: localCandleTime,
-			open: lastCandle.open,
-			high: Math.max(lastCandle.high, newPrice),
-			low: Math.min(lastCandle.low, newPrice),
-			close: newPrice,
-		};
-
-		candlestickSeries.update(updatedCandle);
-		chartData[chartData.length - 1] = updatedCandle;
-	} else if (localCandleTime > (lastCandle?.time || 0)) {
-		const newCandle = {
-			time: localCandleTime,
-			open: newPrice,
-			high: newPrice,
-			low: newPrice,
-			close: newPrice,
-		};
-
-		candlestickSeries.update(newCandle);
-		chartData.push(newCandle);
-	}
-}
-
-async function handleTimeframeChange(timeframe: string) {
-	selectedTimeframe = timeframe;
-	loading = true;
-
-	if (chart) {
-		chart.remove();
-		chart = null;
-	}
-
-	await loadCoinData();
-	loading = false;
-}
-
-async function loadOlderChartData() {
-	if (
-		isLoadingHistory ||
-		noMoreHistory ||
-		!oldestTimestamp ||
-		!candlestickSeries ||
-		!chart
-	)
-		return;
-
-	isLoadingHistory = true;
-	try {
-		const response = await fetch(
-			`/api/coin/${coinSymbol}/chart-history?timeframe=${selectedTimeframe}&before=${oldestTimestamp}`,
-		);
-
-		if (!response.ok) return;
-
-		const result = await response.json();
-
-		if (result.noMoreData || result.candlestickData.length === 0) {
-			noMoreHistory = true;
-			return;
-		}
-
-		const newCandlestick: any[] = result.candlestickData;
-		const newVolume: any[] = result.volumeData;
-
-		// Filter out any duplicates based on time
-		const existingTimes = new Set(chartData.map((c: any) => c.time));
-		const uniqueNewCandles = newCandlestick.filter(
-			(c) => !existingTimes.has(c.time),
-		);
-
-		if (uniqueNewCandles.length === 0) {
-			noMoreHistory = true;
-			return;
-		}
-
-		const existingVolumeTimes = new Set(volumeData.map((v: any) => v.time));
-		const uniqueNewVolume = newVolume.filter(
-			(v) => !existingVolumeTimes.has(v.time),
-		);
-
-		// Save current scroll position before modifying data
-		const currentRange = chart.timeScale().getVisibleLogicalRange();
-		const addedCount = uniqueNewCandles.length;
-
-		// Prepend older data
-		chartData = [...uniqueNewCandles, ...chartData];
-		volumeData = [...uniqueNewVolume, ...volumeData];
-		oldestTimestamp = result.oldestTimestamp ?? oldestTimestamp;
-
-		// Process and set all data on chart
-		const processedChartData = chartData.map((candle: any) => {
-			if (candle.open === candle.close) {
-				const basePrice = candle.open;
-				const variation = basePrice * 0.001;
-				return {
-					...candle,
-					high: Math.max(candle.high, basePrice + variation),
-					low: Math.min(candle.low, basePrice - variation),
-				};
+			if (result.noMoreData || result.candlestickData.length === 0) {
+				noMoreHistory = true;
+				return;
 			}
-			return candle;
-		});
 
-		candlestickSeries.setData(processedChartData);
-		volumeSeries.setData(generateVolumeData(chartData, volumeData));
+			const newCandlestick: any[] = result.candlestickData;
+			const newVolume: any[] = result.volumeData;
 
-		// Restore scroll position, shifted by the number of prepended candles
-		if (currentRange) {
-			chart.timeScale().setVisibleLogicalRange({
-				from: currentRange.from + addedCount,
-				to: currentRange.to + addedCount,
-			});
-		}
-	} catch (e) {
-		console.error("Failed to load older chart data:", e);
-	} finally {
-		isLoadingHistory = false;
-	}
-}
+			// Filter out any duplicates based on time
+			const existingTimes = new Set(chartData.map((c: any) => c.time));
+			const uniqueNewCandles = newCandlestick.filter((c) => !existingTimes.has(c.time));
 
-const currentTimeframeLabel = $derived(
-	timeframeOptions.find((option) => option.value === selectedTimeframe)
-		?.label || "1 minute",
-);
+			if (uniqueNewCandles.length === 0) {
+				noMoreHistory = true;
+				return;
+			}
 
-const chartContainer = $state<HTMLDivElement>();
-let chart: IChartApi | null = null;
-let candlestickSeries: any = null;
-let volumeSeries: any = null;
+			const existingVolumeTimes = new Set(volumeData.map((v: any) => v.time));
+			const uniqueNewVolume = newVolume.filter((v) => !existingVolumeTimes.has(v.time));
 
-$effect(() => {
-	if (chart && chartData.length > 0) {
-		chart.remove();
-		chart = null;
-	}
+			// Save current scroll position before modifying data
+			const currentRange = chart.timeScale().getVisibleLogicalRange();
+			const addedCount = uniqueNewCandles.length;
 
-	if (chartContainer && chartData.length > 0) {
-		chart = createChart(chartContainer, {
-			layout: {
-				textColor: "#666666",
-				background: { type: ColorType.Solid, color: "transparent" },
-				attributionLogo: false,
-				panes: {
-					separatorColor: "#2B2B43",
-					separatorHoverColor: "rgba(107, 114, 142, 0.3)",
-					enableResize: true,
-				},
-			},
-			grid: {
-				vertLines: { color: "#2B2B43" },
-				horzLines: { color: "#2B2B43" },
-			},
-			rightPriceScale: {
-				borderVisible: false,
-				scaleMargins: { top: 0.1, bottom: 0.1 },
-				alignLabels: true,
-				entireTextOnly: false,
-			},
-			timeScale: {
-				borderVisible: false,
-				timeVisible: true,
-				barSpacing: 20,
-				rightOffset: 5,
-				minBarSpacing: 8,
-			},
-			crosshair: {
-				mode: 1,
-				vertLine: {
-					color: "#758696",
-					width: 1,
-					style: 2,
-					visible: true,
-					labelVisible: true,
-				},
-				horzLine: {
-					color: "#758696",
-					width: 1,
-					style: 2,
-					visible: true,
-					labelVisible: true,
-				},
-			},
-		});
-		candlestickSeries = chart.addSeries(CandlestickSeries, {
-			upColor: "#26a69a",
-			downColor: "#ef5350",
-			borderVisible: true,
-			borderUpColor: "#26a69a",
-			borderDownColor: "#ef5350",
-			wickUpColor: "#26a69a",
-			wickDownColor: "#ef5350",
-			priceFormat: { type: "price", precision: 8, minMove: 0.00000001 },
-		});
+			// Prepend older data
+			chartData = [...uniqueNewCandles, ...chartData];
+			volumeData = [...uniqueNewVolume, ...volumeData];
+			oldestTimestamp = result.oldestTimestamp ?? oldestTimestamp;
 
-		volumeSeries = chart.addSeries(
-			HistogramSeries,
-			{
-				priceFormat: { type: "volume" },
-				priceScaleId: "volume",
-			},
-			1,
-		);
-
-		const processedChartData = chartData.map(
-			(candle: { open: any; close: any; high: number; low: number }) => {
+			// Process and set all data on chart
+			const processedChartData = chartData.map((candle: any) => {
 				if (candle.open === candle.close) {
 					const basePrice = candle.open;
 					const variation = basePrice * 0.001;
 					return {
 						...candle,
 						high: Math.max(candle.high, basePrice + variation),
-						low: Math.min(candle.low, basePrice - variation),
+						low: Math.min(candle.low, basePrice - variation)
 					};
 				}
 				return candle;
-			},
-		);
+			});
 
-		candlestickSeries.setData(processedChartData);
-		volumeSeries.setData(generateVolumeData(chartData, volumeData));
+			candlestickSeries.setData(processedChartData);
+			volumeSeries.setData(generateVolumeData(chartData, volumeData));
 
-		const volumePane = chart.panes()[1];
-		if (volumePane) volumePane.setHeight(100);
-
-		chart.timeScale().fitContent();
-
-		const handleResize = () =>
-			chart?.applyOptions({ width: chartContainer?.clientWidth });
-		window.addEventListener("resize", handleResize);
-		handleResize();
-
-		candlestickSeries.priceScale().applyOptions({ borderColor: "#71649C" });
-		volumeSeries.priceScale().applyOptions({ borderColor: "#71649C" });
-		chart.timeScale().applyOptions({ borderColor: "#71649C" });
-
-		const timeScale = chart.timeScale();
-		const handleVisibleRangeChange = () => {
-			const logicalRange = timeScale.getVisibleLogicalRange();
-			if (logicalRange && logicalRange.from < 5) {
-				loadOlderChartData();
+			// Restore scroll position, shifted by the number of prepended candles
+			if (currentRange) {
+				chart.timeScale().setVisibleLogicalRange({
+					from: currentRange.from + addedCount,
+					to: currentRange.to + addedCount
+				});
 			}
-		};
-		timeScale.subscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
-
-		return () => {
-			timeScale.unsubscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
-			window.removeEventListener("resize", handleResize);
-			if (chart) {
-				chart.remove();
-				chart = null;
-			}
-		};
+		} catch (e) {
+			console.error('Failed to load older chart data:', e);
+		} finally {
+			isLoadingHistory = false;
+		}
 	}
-});
 
-function formatPrice(price: number): string {
-	if (price >= 1e18) return `${(price / 1e18).toFixed(2)}Qi`;
-	if (price >= 1e15) return `${(price / 1e15).toFixed(2)}Qa`;
-	if (price >= 1e12) return `${(price / 1e12).toFixed(2)}T`;
-	if (price >= 1e9) return `${(price / 1e9).toFixed(2)}B`;
-	if (price >= 1e6) return `${(price / 1e6).toFixed(2)}M`;
-	if (price >= 1e3) return `${(price / 1e3).toFixed(2)}K`;
-	if (price < 0.000001) {
-		return price.toFixed(8);
-	} else if (price < 0.01) {
-		return price.toFixed(6);
-	} else if (price < 1) {
-		return price.toFixed(4);
-	} else {
-		return price.toFixed(2);
-	}
-}
+	const currentTimeframeLabel = $derived(
+		timeframeOptions.find((option) => option.value === selectedTimeframe)?.label || '1 minute'
+	);
 
-function formatMarketCap(value: number): string {
-	const num = Number(value);
-	if (isNaN(num)) return "$0.00";
-	if (num >= 1e21) return `$${(num / 1e21).toFixed(2)}Sx`;
-	if (num >= 1e18) return `$${(num / 1e18).toFixed(2)}Qi`;
-	if (num >= 1e15) return `$${(num / 1e15).toFixed(2)}Qa`;
-	if (num >= 1e12) return `$${(num / 1e12).toFixed(2)}T`;
-	if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
-	if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
-	if (num >= 1e3) return `$${(num / 1e3).toFixed(2)}K`;
-	return `$${num.toFixed(2)}`;
-}
+	let chartContainer = $state<HTMLDivElement>();
+	let chart: IChartApi | null = null;
+	let candlestickSeries: any = null;
+	let volumeSeries: any = null;
 
-function formatSupply(value: number): string {
-	const num = Number(value);
-	if (isNaN(num)) return "0";
-	if (num >= 1e21) return `${(num / 1e21).toFixed(2)}Sx`;
-	if (num >= 1e18) return `${(num / 1e18).toFixed(2)}Qi`;
-	if (num >= 1e15) return `${(num / 1e15).toFixed(2)}Qa`;
-	if (num >= 1e12) return `${(num / 1e12).toFixed(2)}T`;
-	if (num >= 1e9) return `${(num / 1e9).toFixed(2)}B`;
-	if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`;
-	if (num >= 1e3) return `${(num / 1e3).toFixed(2)}K`;
-	return num.toLocaleString();
-}
+	$effect(() => {
+		if (chart && chartData.length > 0) {
+			chart.remove();
+			chart = null;
+		}
 
-function generateVolumeData(candlestickData: any[], volumeData: any[]) {
-	return candlestickData.map((candle, index) => {
-		// Find corresponding volume data for this time period
-		const volumePoint = volumeData.find((v) => v.time === candle.time);
-		const volume = volumePoint ? volumePoint.volume : 0;
+		if (chartContainer && chartData.length > 0) {
+			chart = createChart(chartContainer, {
+				layout: {
+					textColor: '#666666',
+					background: { type: ColorType.Solid, color: 'transparent' },
+					attributionLogo: false,
+					panes: {
+						separatorColor: '#2B2B43',
+						separatorHoverColor: 'rgba(107, 114, 142, 0.3)',
+						enableResize: true
+					}
+				},
+				grid: {
+					vertLines: { color: '#2B2B43' },
+					horzLines: { color: '#2B2B43' }
+				},
+				rightPriceScale: {
+					borderVisible: false,
+					scaleMargins: { top: 0.1, bottom: 0.1 },
+					alignLabels: true,
+					entireTextOnly: false
+				},
+				timeScale: {
+					borderVisible: false,
+					timeVisible: true,
+					barSpacing: 20,
+					rightOffset: 5,
+					minBarSpacing: 8
+				},
+				crosshair: {
+					mode: 1,
+					vertLine: {
+						color: '#758696',
+						width: 1,
+						style: 2,
+						visible: true,
+						labelVisible: true
+					},
+					horzLine: {
+						color: '#758696',
+						width: 1,
+						style: 2,
+						visible: true,
+						labelVisible: true
+					}
+				}
+			});
+			candlestickSeries = chart.addSeries(CandlestickSeries, {
+				upColor: '#26a69a',
+				downColor: '#ef5350',
+				borderVisible: true,
+				borderUpColor: '#26a69a',
+				borderDownColor: '#ef5350',
+				wickUpColor: '#26a69a',
+				wickDownColor: '#ef5350',
+				priceFormat: { type: 'price', precision: 8, minMove: 0.00000001 }
+			});
 
-		return {
-			time: candle.time,
-			value: volume,
-			color: candle.close >= candle.open ? "#26a69a" : "#ef5350",
-		};
+			volumeSeries = chart.addSeries(
+				HistogramSeries,
+				{
+					priceFormat: { type: 'volume' },
+					priceScaleId: 'volume'
+				},
+				1
+			);
+
+			const processedChartData = chartData.map(
+				(candle: { open: any; close: any; high: number; low: number }) => {
+					if (candle.open === candle.close) {
+						const basePrice = candle.open;
+						const variation = basePrice * 0.001;
+						return {
+							...candle,
+							high: Math.max(candle.high, basePrice + variation),
+							low: Math.min(candle.low, basePrice - variation)
+						};
+					}
+					return candle;
+				}
+			);
+
+			candlestickSeries.setData(processedChartData);
+			volumeSeries.setData(generateVolumeData(chartData, volumeData));
+
+			const volumePane = chart.panes()[1];
+			if (volumePane) volumePane.setHeight(100);
+
+			chart.timeScale().fitContent();
+
+			const handleResize = () => chart?.applyOptions({ width: chartContainer?.clientWidth });
+			window.addEventListener('resize', handleResize);
+			handleResize();
+
+			candlestickSeries.priceScale().applyOptions({ borderColor: '#71649C' });
+			volumeSeries.priceScale().applyOptions({ borderColor: '#71649C' });
+			chart.timeScale().applyOptions({ borderColor: '#71649C' });
+
+			const timeScale = chart.timeScale();
+			const handleVisibleRangeChange = () => {
+				const logicalRange = timeScale.getVisibleLogicalRange();
+				if (logicalRange && logicalRange.from < 5) {
+					loadOlderChartData();
+				}
+			};
+			timeScale.subscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
+
+			return () => {
+				timeScale.unsubscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
+				window.removeEventListener('resize', handleResize);
+				if (chart) {
+					chart.remove();
+					chart = null;
+				}
+			};
+		}
 	});
-}
 
-function formatCountdown(seconds: number): string {
-	const mins = Math.floor(seconds / 60);
-	const secs = seconds % 60;
-	return `${mins}:${secs.toString().padStart(2, "0")}`;
-}
+	function formatPrice(price: number): string {
+		if (price >= 1e18) return `${(price / 1e18).toFixed(2)}Qi`;
+		if (price >= 1e15) return `${(price / 1e15).toFixed(2)}Qa`;
+		if (price >= 1e12) return `${(price / 1e12).toFixed(2)}T`;
+		if (price >= 1e9) return `${(price / 1e9).toFixed(2)}B`;
+		if (price >= 1e6) return `${(price / 1e6).toFixed(2)}M`;
+		if (price >= 1e3) return `${(price / 1e3).toFixed(2)}K`;
+		if (price < 0.000001) {
+			return price.toFixed(8);
+		} else if (price < 0.01) {
+			return price.toFixed(6);
+		} else if (price < 1) {
+			return price.toFixed(4);
+		} else {
+			return price.toFixed(2);
+		}
+	}
 
-const isCreator = $derived(
-	coin && $USER_DATA && coin.creatorId === Number($USER_DATA.id),
-);
-const isTradingLocked = $derived(
-	coin?.isLocked && countdown !== null && countdown > 0,
-);
-const canTrade = $derived(!isTradingLocked || isCreator);
+	function formatMarketCap(value: number): string {
+		const num = Number(value);
+		if (isNaN(num)) return '$0.00';
+		if (num >= 1e21) return `$${(num / 1e21).toFixed(2)}Sx`;
+		if (num >= 1e18) return `$${(num / 1e18).toFixed(2)}Qi`;
+		if (num >= 1e15) return `$${(num / 1e15).toFixed(2)}Qa`;
+		if (num >= 1e12) return `$${(num / 1e12).toFixed(2)}T`;
+		if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
+		if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
+		if (num >= 1e3) return `$${(num / 1e3).toFixed(2)}K`;
+		return `$${num.toFixed(2)}`;
+	}
+
+	function formatSupply(value: number): string {
+		const num = Number(value);
+		if (isNaN(num)) return '0';
+		if (num >= 1e21) return `${(num / 1e21).toFixed(2)}Sx`;
+		if (num >= 1e18) return `${(num / 1e18).toFixed(2)}Qi`;
+		if (num >= 1e15) return `${(num / 1e15).toFixed(2)}Qa`;
+		if (num >= 1e12) return `${(num / 1e12).toFixed(2)}T`;
+		if (num >= 1e9) return `${(num / 1e9).toFixed(2)}B`;
+		if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`;
+		if (num >= 1e3) return `${(num / 1e3).toFixed(2)}K`;
+		return num.toLocaleString();
+	}
+
+	function generateVolumeData(candlestickData: any[], volumeData: any[]) {
+		return candlestickData.map((candle, index) => {
+			// Find corresponding volume data for this time period
+			const volumePoint = volumeData.find((v) => v.time === candle.time);
+			const volume = volumePoint ? volumePoint.volume : 0;
+
+			return {
+				time: candle.time,
+				value: volume,
+				color: candle.close >= candle.open ? '#26a69a' : '#ef5350'
+			};
+		});
+	}
+
+	function formatCountdown(seconds: number): string {
+		const mins = Math.floor(seconds / 60);
+		const secs = seconds % 60;
+		return `${mins}:${secs.toString().padStart(2, '0')}`;
+	}
+
+	const isCreator = $derived(coin && $USER_DATA && coin.creatorId === Number($USER_DATA.id));
+	const isTradingLocked = $derived(coin?.isLocked && countdown !== null && countdown > 0);
+	const canTrade = $derived(!isTradingLocked || isCreator);
 </script>
 
 <SEO
