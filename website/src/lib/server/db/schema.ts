@@ -603,6 +603,26 @@ export const userBlock = pgTable(
 	})
 );
 
+export const userFollow = pgTable(
+	'user_follow',
+	{
+		id: serial('id').primaryKey(),
+		followerId: integer('follower_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		followingId: integer('following_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+	},
+	(table) => ({
+		followerFollowingUnique: unique('user_follow_unique').on(table.followerId, table.followingId),
+		followerIdIdx: index('user_follow_follower_id_idx').on(table.followerId),
+		followingIdIdx: index('user_follow_following_id_idx').on(table.followingId),
+		noSelfFollow: check('no_self_follow', sql`follower_id != following_id`)
+	})
+);
+
 export const adminActionEnum = pgEnum('admin_action', [
 	'BAN',
 	'UNBAN',

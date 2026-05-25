@@ -17,6 +17,33 @@ export interface UserProfile {
 	arcadeLosses: number;
 }
 
+export interface FollowUser {
+	id: number;
+	name: string;
+	username: string;
+	image: string | null;
+	createdAt: Date;
+}
+
+export interface UserFollowData {
+	followersCount: number;
+	followingCount: number;
+	followers: FollowUser[];
+	following: FollowUser[];
+	isFollowing: boolean;
+}
+
+export type FollowRelation = 'followers' | 'following';
+
+export interface FollowPageData {
+	relation: FollowRelation;
+	items: FollowUser[];
+	page: number;
+	perPage: number;
+	totalCount: number;
+	totalPages: number;
+}
+
 export interface UserStats {
 	totalPortfolioValue: number;
 	baseCurrencyBalance: number;
@@ -61,6 +88,7 @@ export interface UserProfileData {
 	createdCoins: CreatedCoin[];
 	recentTransactions: RecentTransaction[];
 	feedback: UserProfileFeedback;
+	follow: UserFollowData;
 }
 
 export type ProfileReaction = 'LIKE' | 'DISLIKE';

@@ -30,10 +30,17 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import * as Pagination from '$lib/components/ui/pagination';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { haptic } from '$lib/stores/haptics';
 	import { USER_DATA } from '$lib/stores/user-data';
-	import type { ProfileReaction, UserProfileFeedback } from '$lib/types/user-profile';
+	import type {
+		FollowUser,
+		ProfileReaction,
+		UserFollowData,
+		UserProfileFeedback
+	} from '$lib/types/user-profile';
 	import { formatDate, formatPrice, formatQuantity, formatValue, getPublicUrl } from '$lib/utils';
 	import { formatTimezone, getTimezoneDate } from '$lib/utils/timezones.js';
 
@@ -42,16 +49,86 @@
 
 	let profileData = $state(data.profileData);
 	let profileFeedback = $state<UserProfileFeedback>(
-		data.profileData?.feedback ?? { likesCount: 0, dislikesCount: 0, userReaction: null }
+		data.profileData?.feedback ?? {
+			likesCount: 0,
+			dislikesCount: 0,
+			userReaction: null
+		}
 	);
+	let followData = $state<UserFollowData>(data.profileData?.follow ?? getEmptyFollowData());
 	let recentTransactions = $state(data.recentTransactions);
 	let loading = $state(false);
 	const usersTimezone = getTimezoneDate(profileData?.profile?.timezone);
 	let userAchievements = $state<any[]>([]);
 	let userGroups = $state<any[]>([]);
 	let groupsLoading = $state(false);
+	let socialDialogOpen = $state(false);
+	let socialDialogMode = $state<'followers' | 'following'>('followers');
+	let socialPage = $state(1);
+	let socialItems = $state<FollowUser[]>([]);
+	let socialLoading = $state(false);
+	const socialPerPage = 8;
 
 	let previousUsername = $state<string | null>(null);
+
+	function getEmptyFollowData(): UserFollowData {
+		return {
+			followersCount: 0,
+			followingCount: 0,
+			followers: [],
+			following: [],
+			isFollowing: false
+		};
+	}
+
+	function openSocialDialog(mode: 'followers' | 'following') {
+		socialDialogMode = mode;
+		socialPage = 1;
+		socialDialogOpen = true;
+	}
+
+	const socialDialogTitle = $derived(socialDialogMode === 'followers' ? 'Followers' : 'Following');
+	const socialDialogDescription = $derived(
+		socialDialogMode === 'followers'
+			? 'People who follow this profile'
+			: 'People this profile follows'
+	);
+	const socialDialogCount = $derived(
+		socialDialogMode === 'followers' ? followData.followersCount : followData.followingCount
+	);
+	const socialDialogHasPagination = $derived(socialDialogCount > socialPerPage);
+
+	async function fetchSocialPage() {
+		if (!socialDialogOpen || socialDialogCount === 0) {
+			socialItems = [];
+			return;
+		}
+
+		socialLoading = true;
+		try {
+			const response = await fetch(
+				`/api/user/${username}/follow?relation=${socialDialogMode}&page=${socialPage}&perPage=${socialPerPage}`
+			);
+			if (response.ok) {
+				const d = await response.json();
+				socialItems = d.items || [];
+			} else {
+				socialItems = [];
+			}
+		} catch {
+			socialItems = [];
+		} finally {
+			socialLoading = false;
+		}
+	}
+
+	$effect(() => {
+		if (socialDialogOpen) {
+			fetchSocialPage();
+		} else {
+			socialItems = [];
+		}
+	});
 
 	$effect(() => {
 		profileData = data.profileData;
@@ -60,6 +137,7 @@
 			dislikesCount: 0,
 			userReaction: null
 		};
+		followData = data.profileData?.follow ?? getEmptyFollowData();
 		recentTransactions = data.recentTransactions;
 	});
 
@@ -70,6 +148,7 @@
 	let isBlocked = $state(false);
 	let blockLoading = $state(false);
 	let reactionLoading = $state(false);
+	let followLoading = $state(false);
 
 	function getOptimisticFeedback(reaction: ProfileReaction): UserProfileFeedback {
 		const currentReaction = profileFeedback.userReaction;
@@ -147,6 +226,41 @@
 			toast.error('Failed to update block status');
 		} finally {
 			blockLoading = false;
+		}
+	}
+
+	async function toggleFollow() {
+		if (!$USER_DATA || isOwnProfile || followLoading || isBlocked) return;
+
+		followLoading = true;
+		haptic.trigger('light');
+
+		const nextFollowing = !followData.isFollowing;
+		const previousFollowData = followData;
+		followData = {
+			...followData,
+			isFollowing: nextFollowing,
+			followersCount: Math.max(0, followData.followersCount + (nextFollowing ? 1 : -1))
+		};
+
+		try {
+			const res = await fetch(`/api/user/${username}/follow`, {
+				method: nextFollowing ? 'POST' : 'DELETE'
+			});
+
+			if (res.ok) {
+				const d = await res.json();
+				followData = d.follow ?? followData;
+			} else {
+				const d = await res.json();
+				followData = previousFollowData;
+				toast.error(d.message || 'Failed to update follow status');
+			}
+		} catch {
+			followData = previousFollowData;
+			toast.error('Failed to update follow status');
+		} finally {
+			followLoading = false;
 		}
 	}
 
@@ -231,6 +345,7 @@
 					dislikesCount: 0,
 					userReaction: null
 				};
+				followData = profileData?.follow ?? getEmptyFollowData();
 				recentTransactions = profileData?.recentTransactions || [];
 			} else {
 				toast.error('Failed to load profile data');
@@ -580,40 +695,79 @@
 								{profileData.profile.bio}
 							</p>
 						{/if}
-						<div class="text-muted-foreground flex items-center gap-2 text-sm">
-							<HugeiconsIcon icon={ClockIcon} class="h-4 w-4" />
-							<span
-								><b
-									>{usersTimezone.getHours().toString().padStart(2, '0')}:{usersTimezone
-										.getMinutes()
-										.toString()
-										.padStart(2, '0')}h</b
-								>
-								(UTC{formatTimezone(profileData?.profile?.timezone ?? 0)})</span
+						<div class="mb-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm sm:text-base">
+							<Button
+								variant="ghost"
+								size="sm"
+								onclick={() => openSocialDialog('following')}
+								class="h-auto px-0 py-0 text-left hover:bg-transparent"
 							>
+								<span class="text-foreground font-semibold tabular-nums"
+									>{followData.followingCount}</span
+								>
+								<span class="text-muted-foreground ml-1">Following</span>
+							</Button>
+
+							<Button
+								variant="ghost"
+								size="sm"
+								onclick={() => openSocialDialog('followers')}
+								class="h-auto px-0 py-0 text-left hover:bg-transparent"
+							>
+								<span class="text-foreground font-semibold tabular-nums"
+									>{followData.followersCount}</span
+								>
+								<span class="text-muted-foreground ml-1">Followers</span>
+							</Button>
 						</div>
-						<div class="text-muted-foreground flex items-center gap-2 text-sm">
-							<HugeiconsIcon icon={Calendar01Icon} class="h-4 w-4" />
-							<span>Joined {memberSince}</span>
+						<div class="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+							<div class="flex items-center gap-2">
+								<HugeiconsIcon icon={ClockIcon} class="h-4 w-4" />
+								<span
+									><b
+										>{usersTimezone.getHours().toString().padStart(2, '0')}:{usersTimezone
+											.getMinutes()
+											.toString()
+											.padStart(2, '0')}h</b
+									>
+									(UTC{formatTimezone(profileData?.profile?.timezone ?? 0)})</span
+								>
+							</div>
+							<div class="flex items-center gap-2">
+								<HugeiconsIcon icon={Calendar01Icon} class="h-4 w-4" />
+								<span>Joined {memberSince}</span>
+							</div>
 						</div>
 					</div>
 					{#if $USER_DATA && !isOwnProfile}
-						<Tooltip.Root>
-							<Tooltip.Trigger>
-								<Button
-									variant={isBlocked ? 'outline' : 'ghost'}
-									size="icon"
-									onclick={toggleBlock}
-									disabled={blockLoading}
-									class="h-8 w-8 {isBlocked
-										? 'text-destructive'
-										: 'text-muted-foreground hover:text-destructive'}"
-								>
-									<HugeiconsIcon icon={UnavailableIcon} class="h-4 w-4" />
-								</Button>
-							</Tooltip.Trigger>
-							<Tooltip.Content>{isBlocked ? 'Unblock' : 'Block'}</Tooltip.Content>
-						</Tooltip.Root>
+						<div class="flex items-center gap-2 self-start">
+							<Button
+								variant={followData.isFollowing ? 'outline' : 'default'}
+								size="sm"
+								onclick={toggleFollow}
+								disabled={followLoading || isBlocked}
+								class="h-9 min-w-28 gap-2"
+							>
+								<HugeiconsIcon icon={UserGroupIcon} class="h-4 w-4" />
+								{followData.isFollowing ? 'Following' : 'Follow'}
+							</Button>
+							<Tooltip.Root>
+								<Tooltip.Trigger>
+									<Button
+										variant={isBlocked ? 'outline' : 'ghost'}
+										size="icon"
+										onclick={toggleBlock}
+										disabled={blockLoading}
+										class="h-8 w-8 {isBlocked
+											? 'text-destructive'
+											: 'text-muted-foreground hover:text-destructive'}"
+									>
+										<HugeiconsIcon icon={UnavailableIcon} class="h-4 w-4" />
+									</Button>
+								</Tooltip.Trigger>
+								<Tooltip.Content>{isBlocked ? 'Unblock' : 'Block'}</Tooltip.Content>
+							</Tooltip.Root>
+						</div>
 					{/if}
 					{#if $USER_DATA}
 						<div class="ml-auto flex flex-col items-end gap-2 self-start">
@@ -679,6 +833,78 @@
 				</div>
 			</Card.Content>
 		</Card.Root>
+
+		<Dialog.Root bind:open={socialDialogOpen}>
+			<Dialog.Content class="sm:max-w-2xl">
+				<Dialog.Header>
+					<Dialog.Title>{socialDialogTitle}</Dialog.Title>
+					<Dialog.Description>
+						{socialDialogDescription} · {socialDialogCount}
+					</Dialog.Description>
+				</Dialog.Header>
+
+				<div class="space-y-3">
+					{#if socialLoading}
+						<div class="text-muted-foreground py-10 text-center text-sm">Loading...</div>
+					{:else if socialItems.length > 0}
+						<div class="max-h-[50vh] space-y-2 overflow-y-auto pr-1">
+							{#each socialItems as person}
+								<button
+									onclick={() => goto(`/user/${person.username}`)}
+									class="hover:bg-muted/60 flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors"
+								>
+									<Avatar.Root class="size-10 shrink-0">
+										<Avatar.Image src={getPublicUrl(person.image)} alt={person.name} />
+										<Avatar.Fallback>{person.name.charAt(0).toUpperCase()}</Avatar.Fallback>
+									</Avatar.Root>
+									<div class="min-w-0 flex-1">
+										<div class="truncate text-sm font-medium">{person.name}</div>
+										<p class="text-muted-foreground truncate text-xs">@{person.username}</p>
+									</div>
+								</button>
+							{/each}
+						</div>
+
+						{#if socialDialogHasPagination}
+							<Pagination.Root
+								count={socialDialogCount}
+								perPage={socialPerPage}
+								bind:page={socialPage}
+								class="mt-2"
+							>
+								{#snippet children({ pages, currentPage: paginationCurrentPage })}
+									<Pagination.Content>
+										<Pagination.Item>
+											<Pagination.PrevButton />
+										</Pagination.Item>
+										{#each pages as page (page.key)}
+											{#if page.type === 'ellipsis'}
+												<Pagination.Item>
+													<Pagination.Ellipsis />
+												</Pagination.Item>
+											{:else}
+												<Pagination.Item>
+													<Pagination.Link {page} isActive={paginationCurrentPage === page.value}>
+														{page.value}
+													</Pagination.Link>
+												</Pagination.Item>
+											{/if}
+										{/each}
+										<Pagination.Item>
+											<Pagination.NextButton />
+										</Pagination.Item>
+									</Pagination.Content>
+								{/snippet}
+							</Pagination.Root>
+						{/if}
+					{:else}
+						<div class="text-muted-foreground py-10 text-center text-sm">
+							No {socialDialogMode === 'followers' ? 'followers' : 'following'} yet.
+						</div>
+					{/if}
+				</div>
+			</Dialog.Content>
+		</Dialog.Root>
 
 		<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 			<Card.Root class="py-0">

@@ -3,6 +3,7 @@ import { and, count, desc, eq, gte, sql } from 'drizzle-orm';
 import { auth } from '$lib/auth';
 import { db } from '$lib/server/db';
 import { coin, profileReaction, transaction, user, userPortfolio } from '$lib/server/db/schema';
+import { getFollowSummary } from '$lib/server/follows';
 
 async function getFeedbackSummary(targetUserId: number, sessionUserId?: number) {
 	const [reactionStats] = await db
@@ -176,6 +177,10 @@ export async function GET({ params, request }) {
 			actualUserId,
 			session?.user ? Number(session.user.id) : undefined
 		);
+		const follow = await getFollowSummary(
+			actualUserId,
+			session?.user ? Number(session.user.id) : undefined
+		);
 
 		return json({
 			profile: {
@@ -199,7 +204,8 @@ export async function GET({ params, request }) {
 			},
 			createdCoins,
 			recentTransactions,
-			feedback
+			feedback,
+			follow
 		});
 	} catch (e) {
 		console.error('Failed to fetch user profile:', e);
