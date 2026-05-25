@@ -1,20 +1,20 @@
+import { sql } from 'drizzle-orm';
 import {
+	bigint,
+	boolean,
+	check,
+	decimal,
+	index,
+	integer,
+	pgEnum,
 	pgTable,
+	primaryKey,
+	serial,
 	text,
 	timestamp,
-	boolean,
-	decimal,
-	serial,
-	varchar,
-	integer,
-	primaryKey,
-	pgEnum,
-	index,
 	unique,
-	check,
-	bigint
+	varchar
 } from 'drizzle-orm/pg-core';
-import { sql } from 'drizzle-orm';
 
 export const transactionTypeEnum = pgEnum('transaction_type', [
 	'BUY',
@@ -37,6 +37,7 @@ export const notificationTypeEnum = pgEnum('notification_type', [
 ]);
 export const shopItemTypeEnum = pgEnum('shop_item_type', ['namecolor']);
 export const promoRewardTypeEnum = pgEnum('promo_reward_type', ['BASE_CURRENCY', 'GEMS']);
+export const profileReactionEnum = pgEnum('profile_reaction_type', ['LIKE', 'DISLIKE']);
 
 export const user = pgTable(
 	'user',
@@ -138,8 +139,12 @@ export const account = pgTable('account', {
 	accessToken: text('access_token'),
 	refreshToken: text('refresh_token'),
 	idToken: text('id_token'),
-	accessTokenExpiresAt: timestamp('access_token_expires_at', { withTimezone: true }),
-	refreshTokenExpiresAt: timestamp('refresh_token_expires_at', { withTimezone: true }),
+	accessTokenExpiresAt: timestamp('access_token_expires_at', {
+		withTimezone: true
+	}),
+	refreshTokenExpiresAt: timestamp('refresh_token_expires_at', {
+		withTimezone: true
+	}),
 	scope: text('scope'),
 	password: text('password'),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -162,17 +167,31 @@ export const coin = pgTable(
 		name: varchar('name', { length: 45 }).notNull(),
 		symbol: varchar('symbol', { length: 16 }).notNull().unique(),
 		icon: text('icon'), // New field for coin icon
-		creatorId: integer('creator_id').references(() => user.id, { onDelete: 'set null' }), // Coin can exist even if creator is deleted
-		initialSupply: decimal('initial_supply', { precision: 30, scale: 8 }).notNull(),
-		circulatingSupply: decimal('circulating_supply', { precision: 30, scale: 8 }).notNull(),
-		currentPrice: decimal('current_price', { precision: 30, scale: 8 }).notNull(), // Price in base currency
+		creatorId: integer('creator_id').references(() => user.id, {
+			onDelete: 'set null'
+		}), // Coin can exist even if creator is deleted
+		initialSupply: decimal('initial_supply', {
+			precision: 30,
+			scale: 8
+		}).notNull(),
+		circulatingSupply: decimal('circulating_supply', {
+			precision: 30,
+			scale: 8
+		}).notNull(),
+		currentPrice: decimal('current_price', {
+			precision: 30,
+			scale: 8
+		}).notNull(), // Price in base currency
 		marketCap: decimal('market_cap', { precision: 42, scale: 2 }).notNull(),
 		volume24h: decimal('volume_24h', { precision: 42, scale: 2 }).default('0.00'),
 		change24h: decimal('change_24h', { precision: 14, scale: 4 }).default('0.0000'), // Percentage, capped at ±9,999,999.9999
 		poolCoinAmount: decimal('pool_coin_amount', { precision: 30, scale: 8 })
 			.notNull()
 			.default('0.00000000'),
-		poolBaseCurrencyAmount: decimal('pool_base_currency_amount', { precision: 30, scale: 8 })
+		poolBaseCurrencyAmount: decimal('pool_base_currency_amount', {
+			precision: 30,
+			scale: 8
+		})
 			.notNull()
 			.default('0.00000000'),
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -218,13 +237,18 @@ export const transaction = pgTable(
 	'transaction',
 	{
 		id: serial('id').primaryKey(),
-		userId: integer('user_id').references(() => user.id, { onDelete: 'set null' }),
+		userId: integer('user_id').references(() => user.id, {
+			onDelete: 'set null'
+		}),
 		coinId: integer('coin_id')
 			.notNull()
 			.references(() => coin.id, { onDelete: 'cascade' }),
 		type: transactionTypeEnum('type').notNull(),
 		quantity: decimal('quantity', { precision: 30, scale: 8 }).notNull(),
-		pricePerCoin: decimal('price_per_coin', { precision: 30, scale: 8 }).notNull(),
+		pricePerCoin: decimal('price_per_coin', {
+			precision: 30,
+			scale: 8
+		}).notNull(),
 		totalBaseCurrencyAmount: decimal('total_base_currency_amount', {
 			precision: 30,
 			scale: 8
@@ -233,7 +257,9 @@ export const transaction = pgTable(
 		recipientUserId: integer('recipient_user_id').references(() => user.id, {
 			onDelete: 'set null'
 		}),
-		senderUserId: integer('sender_user_id').references(() => user.id, { onDelete: 'set null' }),
+		senderUserId: integer('sender_user_id').references(() => user.id, {
+			onDelete: 'set null'
+		}),
 		note: varchar('note', { length: 500 })
 	},
 	(table) => {
@@ -261,7 +287,9 @@ export const comment = pgTable(
 	'comment',
 	{
 		id: serial('id').primaryKey(),
-		userId: integer('user_id').references(() => user.id, { onDelete: 'set null' }),
+		userId: integer('user_id').references(() => user.id, {
+			onDelete: 'set null'
+		}),
 		coinId: integer('coin_id')
 			.notNull()
 			.references(() => coin.id, { onDelete: 'cascade' }),
@@ -297,6 +325,25 @@ export const commentLike = pgTable(
 	}
 );
 
+export const profileReaction = pgTable(
+	'profile_reaction',
+	{
+		reactorUserId: integer('reactor_user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		targetUserId: integer('target_user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		reaction: profileReactionEnum('reaction').notNull(),
+		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+	},
+	(table) => ({
+		pk: primaryKey({ columns: [table.reactorUserId, table.targetUserId] }),
+		targetUserIdIdx: index('profile_reaction_target_user_id_idx').on(table.targetUserId),
+		noSelfReaction: check('no_self_profile_reaction', sql`reactor_user_id != target_user_id`)
+	})
+);
+
 export const promoCode = pgTable('promo_code', {
 	id: serial('id').primaryKey(),
 	code: varchar('code', { length: 50 }).notNull().unique(),
@@ -308,18 +355,25 @@ export const promoCode = pgTable('promo_code', {
 	isSecret: boolean('is_secret').notNull().default(false),
 	expiresAt: timestamp('expires_at', { withTimezone: true }),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-	createdBy: integer('created_by').references(() => user.id, { onDelete: 'set null' })
+	createdBy: integer('created_by').references(() => user.id, {
+		onDelete: 'set null'
+	})
 });
 
 export const promoCodeRedemption = pgTable(
 	'promo_code_redemption',
 	{
 		id: serial('id').primaryKey(),
-		userId: integer('user_id').references(() => user.id, { onDelete: 'cascade' }),
+		userId: integer('user_id').references(() => user.id, {
+			onDelete: 'cascade'
+		}),
 		promoCodeId: integer('promo_code_id')
 			.notNull()
 			.references(() => promoCode.id),
-		rewardAmount: decimal('reward_amount', { precision: 30, scale: 8 }).notNull(),
+		rewardAmount: decimal('reward_amount', {
+			precision: 30,
+			scale: 8
+		}).notNull(),
 		rewardType: promoRewardTypeEnum('reward_type').notNull().default('BASE_CURRENCY'),
 		redeemedAt: timestamp('redeemed_at', { withTimezone: true }).notNull().defaultNow()
 	},
@@ -332,10 +386,14 @@ export const predictionQuestion = pgTable(
 	'prediction_question',
 	{
 		id: serial('id').primaryKey(),
-		creatorId: integer('creator_id').references(() => user.id, { onDelete: 'set null' }),
+		creatorId: integer('creator_id').references(() => user.id, {
+			onDelete: 'set null'
+		}),
 		question: varchar('question', { length: 200 }).notNull(),
 		status: predictionMarketEnum('status').notNull().default('ACTIVE'),
-		resolutionDate: timestamp('resolution_date', { withTimezone: true }).notNull(),
+		resolutionDate: timestamp('resolution_date', {
+			withTimezone: true
+		}).notNull(),
 		aiResolution: boolean('ai_resolution'), // true = YES, false = NO, null = unresolved
 		totalYesAmount: decimal('total_yes_amount', { precision: 30, scale: 8 })
 			.notNull()
@@ -367,7 +425,9 @@ export const predictionBet = pgTable(
 	'prediction_bet',
 	{
 		id: serial('id').primaryKey(),
-		userId: integer('user_id').references(() => user.id, { onDelete: 'set null' }),
+		userId: integer('user_id').references(() => user.id, {
+			onDelete: 'set null'
+		}),
 		questionId: integer('question_id')
 			.notNull()
 			.references(() => predictionQuestion.id, { onDelete: 'cascade' }),
@@ -396,7 +456,9 @@ export const accountDeletionRequest = pgTable(
 			.references(() => user.id, { onDelete: 'cascade' })
 			.unique(),
 		requestedAt: timestamp('requested_at', { withTimezone: true }).notNull().defaultNow(),
-		scheduledDeletionAt: timestamp('scheduled_deletion_at', { withTimezone: true }).notNull(),
+		scheduledDeletionAt: timestamp('scheduled_deletion_at', {
+			withTimezone: true
+		}).notNull(),
 		reason: text('reason'),
 		isProcessed: boolean('is_processed').notNull().default(false)
 	},
@@ -557,7 +619,9 @@ export const adminLog = pgTable(
 			.notNull()
 			.references(() => user.id, { onDelete: 'cascade' }),
 		action: adminActionEnum('action').notNull(),
-		targetUserId: integer('target_user_id').references(() => user.id, { onDelete: 'set null' }),
+		targetUserId: integer('target_user_id').references(() => user.id, {
+			onDelete: 'set null'
+		}),
 		details: text('details'),
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 	},
@@ -575,7 +639,9 @@ export const groups = pgTable(
 		name: varchar('name', { length: 50 }).notNull().unique(),
 		description: varchar('description', { length: 500 }),
 		icon: text('icon'),
-		ownerId: integer('owner_id').references(() => user.id, { onDelete: 'set null' }),
+		ownerId: integer('owner_id').references(() => user.id, {
+			onDelete: 'set null'
+		}),
 		isPublic: boolean('is_public').notNull().default(true),
 		treasuryBalance: decimal('treasury_balance', { precision: 30, scale: 8 })
 			.notNull()
@@ -633,7 +699,9 @@ export const groupWallPost = pgTable(
 		groupId: integer('group_id')
 			.notNull()
 			.references(() => groups.id, { onDelete: 'cascade' }),
-		userId: integer('user_id').references(() => user.id, { onDelete: 'set null' }),
+		userId: integer('user_id').references(() => user.id, {
+			onDelete: 'set null'
+		}),
 		content: varchar('content', { length: 500 }).notNull(),
 		isDeleted: boolean('is_deleted').notNull().default(false),
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
@@ -650,7 +718,9 @@ export const groupTreasuryTx = pgTable(
 		groupId: integer('group_id')
 			.notNull()
 			.references(() => groups.id, { onDelete: 'cascade' }),
-		userId: integer('user_id').references(() => user.id, { onDelete: 'set null' }),
+		userId: integer('user_id').references(() => user.id, {
+			onDelete: 'set null'
+		}),
 		type: varchar('type', { length: 20 }).notNull(),
 		amount: decimal('amount', { precision: 30, scale: 8 }).notNull(),
 		note: varchar('note', { length: 200 }),
@@ -677,7 +747,9 @@ export const lotteryDraw = pgTable(
 		rolloverAmount: decimal('rollover_amount', { precision: 30, scale: 8 }).notNull().default('0'),
 		totalTickets: integer('total_tickets').notNull().default(0),
 		status: lotteryStatusEnum('status').notNull().default('ACTIVE'),
-		winnerId: integer('winner_id').references(() => user.id, { onDelete: 'set null' }),
+		winnerId: integer('winner_id').references(() => user.id, {
+			onDelete: 'set null'
+		}),
 		winnerPrize: decimal('winner_prize', { precision: 30, scale: 8 }),
 		drawChance: decimal('draw_chance', { precision: 10, scale: 8 }).notNull().default('0.00100000'),
 		drawnAt: timestamp('drawn_at', { withTimezone: true }),

@@ -26,18 +26,6 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (!code || !rewardAmount || !rewardType) {
 		return json({ error: 'Code, reward amount, and reward type are required' }, { status: 400 });
 	}
-	if (rewardAmount > 1_000_000 && rewardType === 'BASE_CURRENCY') {
-		return json(
-			{ error: "You can't create a promocode that gives more than $1 million per use." },
-			{ status: 400 }
-		);
-	}
-	if (rewardAmount > 1_000_000 && rewardType === 'GEMS') {
-		return json(
-			{ error: "You can't create a promocode that gives more than 1 million gems per use." },
-			{ status: 400 }
-		);
-	}
 
 	const normalizedCode = code.trim().toUpperCase();
 	const userId = Number(session.user.id);

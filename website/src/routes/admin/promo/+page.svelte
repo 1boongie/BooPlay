@@ -256,7 +256,6 @@
 									id="reward"
 									type="number"
 									step="0.01"
-									min="0"
 									bind:value={rewardAmount}
 									placeholder="100.00"
 									disabled={isCreating}

@@ -1,10 +1,47 @@
-import { json, error } from '@sveltejs/kit';
+import { error, json } from '@sveltejs/kit';
+import { and, count, desc, eq, gte, sql } from 'drizzle-orm';
+import { auth } from '$lib/auth';
 import { db } from '$lib/server/db';
-import { user, coin, transaction, userPortfolio } from '$lib/server/db/schema';
-import { eq, desc, sql, count, and, gte } from 'drizzle-orm';
+import { coin, profileReaction, transaction, user, userPortfolio } from '$lib/server/db/schema';
 
-export async function GET({ params }) {
+async function getFeedbackSummary(targetUserId: number, sessionUserId?: number) {
+	const [reactionStats] = await db
+		.select({
+			likesCount: sql<number>`COALESCE(SUM(CASE WHEN ${profileReaction.reaction} = 'LIKE' THEN 1 ELSE 0 END), 0)`,
+			dislikesCount: sql<number>`COALESCE(SUM(CASE WHEN ${profileReaction.reaction} = 'DISLIKE' THEN 1 ELSE 0 END), 0)`
+		})
+		.from(profileReaction)
+		.where(eq(profileReaction.targetUserId, targetUserId));
+
+	let userReaction: 'LIKE' | 'DISLIKE' | null = null;
+
+	if (sessionUserId) {
+		const [existingReaction] = await db
+			.select({ reaction: profileReaction.reaction })
+			.from(profileReaction)
+			.where(
+				and(
+					eq(profileReaction.targetUserId, targetUserId),
+					eq(profileReaction.reactorUserId, sessionUserId)
+				)
+			)
+			.limit(1);
+
+		userReaction = existingReaction?.reaction ?? null;
+	}
+
+	return {
+		likesCount: Number(reactionStats?.likesCount ?? 0),
+		dislikesCount: Number(reactionStats?.dislikesCount ?? 0),
+		userReaction
+	};
+}
+
+export async function GET({ params, request }) {
 	const { userId } = params;
+	const session = await auth.api.getSession({
+		headers: request.headers
+	});
 
 	if (!userId) {
 		throw error(400, 'User ID or username is required');
@@ -135,6 +172,11 @@ export async function GET({ params }) {
 				and(eq(transaction.userId, actualUserId), gte(transaction.timestamp, twentyFourHoursAgo))
 			);
 
+		const feedback = await getFeedbackSummary(
+			actualUserId,
+			session?.user ? Number(session.user.id) : undefined
+		);
+
 		return json({
 			profile: {
 				...userProfile,
@@ -156,7 +198,8 @@ export async function GET({ params }) {
 				sellVolume24h: transactionStats24h[0]?.sellVolume24h || 0
 			},
 			createdCoins,
-			recentTransactions
+			recentTransactions,
+			feedback
 		});
 	} catch (e) {
 		console.error('Failed to fetch user profile:', e);

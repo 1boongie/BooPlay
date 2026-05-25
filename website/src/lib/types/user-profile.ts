@@ -60,4 +60,13 @@ export interface UserProfileData {
 	stats: UserStats;
 	createdCoins: CreatedCoin[];
 	recentTransactions: RecentTransaction[];
+	feedback: UserProfileFeedback;
+}
+
+export type ProfileReaction = 'LIKE' | 'DISLIKE';
+
+export interface UserProfileFeedback {
+	likesCount: number;
+	dislikesCount: number;
+	userReaction: ProfileReaction | null;
 }

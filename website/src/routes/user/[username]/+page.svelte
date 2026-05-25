@@ -9,6 +9,8 @@
 		Invoice03Icon,
 		Locker01Icon,
 		PercentIcon,
+		ThumbsDownIcon,
+		ThumbsUpIcon,
 		TradeDownIcon,
 		TradeUpIcon,
 		UnavailableIcon,
@@ -31,6 +33,7 @@
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { haptic } from '$lib/stores/haptics';
 	import { USER_DATA } from '$lib/stores/user-data';
+	import type { ProfileReaction, UserProfileFeedback } from '$lib/types/user-profile';
 	import { formatDate, formatPrice, formatQuantity, formatValue, getPublicUrl } from '$lib/utils';
 	import { formatTimezone, getTimezoneDate } from '$lib/utils/timezones.js';
 
@@ -38,6 +41,9 @@
 	const username = $derived(data.username);
 
 	let profileData = $state(data.profileData);
+	let profileFeedback = $state<UserProfileFeedback>(
+		data.profileData?.feedback ?? { likesCount: 0, dislikesCount: 0, userReaction: null }
+	);
 	let recentTransactions = $state(data.recentTransactions);
 	let loading = $state(false);
 	const usersTimezone = getTimezoneDate(profileData?.profile?.timezone);
@@ -49,6 +55,8 @@
 
 	$effect(() => {
 		profileData = data.profileData;
+		profileFeedback =
+			data.profileData?.feedback ?? { likesCount: 0, dislikesCount: 0, userReaction: null };
 		recentTransactions = data.recentTransactions;
 	});
 
@@ -58,6 +66,49 @@
 
 	let isBlocked = $state(false);
 	let blockLoading = $state(false);
+	let reactionLoading = $state(false);
+
+	function getOptimisticFeedback(reaction: ProfileReaction): UserProfileFeedback {
+		const currentReaction = profileFeedback.userReaction;
+
+		if (currentReaction === reaction) {
+			return {
+				likesCount:
+					reaction === 'LIKE' ? Math.max(0, profileFeedback.likesCount - 1) : profileFeedback.likesCount,
+				dislikesCount:
+					reaction === 'DISLIKE'
+						? Math.max(0, profileFeedback.dislikesCount - 1)
+						: profileFeedback.dislikesCount,
+				userReaction: null
+			};
+		}
+
+		if (!currentReaction) {
+			return {
+				likesCount:
+					reaction === 'LIKE' ? profileFeedback.likesCount + 1 : profileFeedback.likesCount,
+				dislikesCount:
+					reaction === 'DISLIKE' ? profileFeedback.dislikesCount + 1 : profileFeedback.dislikesCount,
+				userReaction: reaction
+			};
+		}
+
+		return {
+			likesCount:
+				currentReaction === 'LIKE'
+					? Math.max(0, profileFeedback.likesCount - 1)
+					: reaction === 'LIKE'
+						? profileFeedback.likesCount + 1
+						: profileFeedback.likesCount,
+			dislikesCount:
+				currentReaction === 'DISLIKE'
+					? Math.max(0, profileFeedback.dislikesCount - 1)
+					: reaction === 'DISLIKE'
+						? profileFeedback.dislikesCount + 1
+						: profileFeedback.dislikesCount,
+			userReaction: reaction
+		};
+	}
 
 	async function checkBlockStatus() {
 		if (!$USER_DATA || isOwnProfile) return;
@@ -89,6 +140,39 @@
 			toast.error('Failed to update block status');
 		} finally {
 			blockLoading = false;
+		}
+	}
+
+	async function toggleProfileReaction(reaction: ProfileReaction) {
+		if (!$USER_DATA || isOwnProfile || reactionLoading) return;
+
+		reactionLoading = true;
+		haptic.trigger('light');
+
+		const nextReaction = profileFeedback.userReaction === reaction ? null : reaction;
+		const previousFeedback = profileFeedback;
+		profileFeedback = getOptimisticFeedback(reaction);
+
+		try {
+			const res = await fetch(`/api/user/${username}/reaction`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ reaction: nextReaction })
+			});
+
+			if (res.ok) {
+				const d = await res.json();
+				profileFeedback = d.feedback ?? profileFeedback;
+			} else {
+				const d = await res.json();
+				profileFeedback = previousFeedback;
+				toast.error(d.message || 'Failed to update profile reaction');
+			}
+		} catch {
+			profileFeedback = previousFeedback;
+			toast.error('Failed to update profile reaction');
+		} finally {
+			reactionLoading = false;
 		}
 	}
 
@@ -135,6 +219,8 @@
 			const response = await fetch(`/api/user/${username}`);
 			if (response.ok) {
 				profileData = await response.json();
+				profileFeedback =
+					profileData?.feedback ?? { likesCount: 0, dislikesCount: 0, userReaction: null };
 				recentTransactions = profileData?.recentTransactions || [];
 			} else {
 				toast.error('Failed to load profile data');
@@ -502,8 +588,7 @@
 						</div>
 					</div>
 					{#if $USER_DATA && !isOwnProfile}
-						<div class="ml-auto self-start">
-							<Tooltip.Provider>
+
 								<Tooltip.Root>
 									<Tooltip.Trigger>
 										<Button
@@ -520,6 +605,56 @@
 									</Tooltip.Trigger>
 									<Tooltip.Content>{isBlocked ? 'Unblock' : 'Block'}</Tooltip.Content>
 								</Tooltip.Root>
+						<div class="ml-auto flex flex-col items-end gap-2 self-start">
+							<Tooltip.Provider>
+								<div class="bg-muted/30 border-border/70 flex items-center gap-1 rounded-full border p-1">
+									<Tooltip.Root>
+										<Tooltip.Trigger>
+											<Button
+												variant="ghost"
+												size="sm"
+												disabled={reactionLoading}
+												onclick={() => toggleProfileReaction('LIKE')}
+												class="flex h-8 items-center gap-1 px-3 {profileFeedback.userReaction === 'LIKE'
+													? 'text-success hover:text-success'
+													: 'text-muted-foreground hover:text-foreground'}"
+											>
+												<HugeiconsIcon
+													icon={ThumbsUpIcon}
+													class="h-4 w-4 {profileFeedback.userReaction === 'LIKE' ? 'fill-current' : ''}"
+												/>
+												{#if profileFeedback.likesCount > 0}
+													<span class="text-xs font-medium">{profileFeedback.likesCount}</span>
+												{/if}
+											</Button>
+										</Tooltip.Trigger>
+										<Tooltip.Content>Like profile</Tooltip.Content>
+									</Tooltip.Root>
+
+									<Tooltip.Root>
+										<Tooltip.Trigger>
+											<Button
+												variant="ghost"
+												size="sm"
+												disabled={reactionLoading}
+												onclick={() => toggleProfileReaction('DISLIKE')}
+												class="flex h-8 items-center gap-1 px-3 {profileFeedback.userReaction === 'DISLIKE'
+													? 'text-red-600 hover:text-red-500'
+													: 'text-muted-foreground hover:text-foreground'}"
+											>
+												<HugeiconsIcon
+													icon={ThumbsDownIcon}
+													class="h-4 w-4 {profileFeedback.userReaction === 'DISLIKE' ? 'fill-current' : ''}"
+												/>
+												{#if profileFeedback.dislikesCount > 0}
+													<span class="text-xs font-medium">{profileFeedback.dislikesCount}</span>
+												{/if}
+											</Button>
+										</Tooltip.Trigger>
+										<Tooltip.Content>Dislike profile</Tooltip.Content>
+									</Tooltip.Root>
+								</div>
+
 							</Tooltip.Provider>
 						</div>
 					{/if}
