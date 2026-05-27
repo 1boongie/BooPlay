@@ -51,6 +51,14 @@ export const CATEGORY_LABEL: Record<AchievementCategory, string> = {
 	special: 'Special'
 };
 
+export function getAchievementName(achievement: AchievementDef): string {
+	return achievement.name;
+}
+
+export function getAchievementDescription(achievement: AchievementDef): string {
+	return achievement.description;
+}
+
 export const ACHIEVEMENTS: AchievementDef[] = [
 	// TRADING (12)
 	{
@@ -58,19 +66,9 @@ export const ACHIEVEMENTS: AchievementDef[] = [
 		name: "Baby's First Buy",
 		description: 'Buy any coin for the first time',
 		icon: 'green_coin.png',
-		difficulty: 'easy',
 		cashReward: 1000,
 		gemReward: 5,
-		category: 'trading'
-	},
-	{
-		id: 'first_sell',
-		name: 'Paper Hands',
-		description: 'Sell a coin for the first time',
-		icon: 'red_cash.png',
 		difficulty: 'easy',
-		cashReward: 1000,
-		gemReward: 5,
 		category: 'trading'
 	},
 	{
@@ -748,6 +746,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
 		category: 'special'
 	}
 ];
+
 
 export const ACHIEVEMENTS_MAP: Record<string, AchievementDef> = Object.fromEntries(
 	ACHIEVEMENTS.map((a) => [a.id, a])

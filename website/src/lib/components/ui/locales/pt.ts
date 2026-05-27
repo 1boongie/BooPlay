@@ -1,5 +1,264 @@
 import type en from './en';
 
+const achievementItems = {
+	first_buy: {
+		name: 'Primeira Compra',
+		description: 'Compre qualquer moeda pela primeira vez'
+	},
+	first_sell: {
+		name: 'Mãos de Papel',
+		description: 'Venda uma moeda pela primeira vez'
+	},
+	trades_50: {
+		name: 'Frequente do Mercado',
+		description: 'Conclua 50 negociações'
+	},
+	trades_500: {
+		name: 'Máquina de Trading',
+		description: 'Conclua 500 negociações'
+	},
+	trades_5000: {
+		name: 'Lobo de Wall Street',
+		description: 'Conclua 5.000 negociações'
+	},
+	dip_buyer: {
+		name: 'Comprador de Queda',
+		description: 'Compre uma moeda que caiu 50% ou mais nas últimas 24h'
+	},
+	whale_trade: {
+		name: 'Operação de Baleia',
+		description: 'Faça uma única negociação no valor de $100.000+'
+	},
+	hold_10_coins: {
+		name: 'Diversificado',
+		description: 'Mantenha 10 moedas diferentes ao mesmo tempo'
+	},
+	hold_25_coins: {
+		name: 'Fundo de Índice',
+		description: 'Mantenha 25 moedas diferentes ao mesmo tempo'
+	},
+	yolo: {
+		name: 'YOLO',
+		description: 'Gaste $50.000+ em uma única negociação'
+	},
+	volume_10m: {
+		name: 'Rei do Volume',
+		description: 'Acumule $10.000.000 em volume total de negociações'
+	},
+	diamond_hands: {
+		name: 'Mãos de Diamante',
+		description: 'Segure uma única moeda por 30 dias ou mais'
+	},
+	true_dedication: {
+		name: 'Dedicação Real',
+		description: 'Invista $1.000+ em uma moeda por 14 dias seguidos sem vender'
+	},
+	portfolio_1k: {
+		name: 'Primeira Vírgula',
+		description: 'Atinja $1.000 de valor total do portfólio'
+	},
+	portfolio_100k: {
+		name: 'Seis Algarismos',
+		description: 'Atinja $100.000 de valor total do portfólio'
+	},
+	portfolio_1m: {
+		name: 'Milionário',
+		description: 'Atinja $1.000.000 de valor total do portfólio'
+	},
+	portfolio_1b: {
+		name: 'Bilionário',
+		description: 'Atinja $1.000.000.000 de valor total do portfólio'
+	},
+	broke: {
+		name: 'Quebrado',
+		description: 'Tenha menos de $1 na sua conta'
+	},
+	create_coin: {
+		name: 'Minerador',
+		description: 'Crie sua primeira moeda'
+	},
+	create_5: {
+		name: 'Minerador em Série',
+		description: 'Crie 5 moedas'
+	},
+	create_25: {
+		name: 'Fábrica de Moedas',
+		description: 'Crie 25 moedas'
+	},
+	moon_100x: {
+		name: 'Até a Lua',
+		description: 'Faça uma moeda que você criou atingir $1 (1.000.000x do preço inicial)'
+	},
+	rug_pull: {
+		name: 'Senhor do Rug Pull',
+		description: 'Despenque o preço de uma moeda em 50% ou mais em uma única venda'
+	},
+	first_arcade: {
+		name: 'Sentindo Sorte',
+		description: 'Jogue seu primeiro jogo de arcade'
+	},
+	slots_jackpot: {
+		name: 'Jackpot!',
+		description: 'Acertar um trio no caça-níquel'
+	},
+	mines_15: {
+		name: 'Minesweeper Pro',
+		description: 'Revele 15 ou mais casas seguras em uma única partida de mines e saque'
+	},
+	mines_24: {
+		name: 'Deus do Minesweeper',
+		description: 'Vença com 24 minas ativadas'
+	},
+	mines_21: {
+		name: 'Nuvem 9',
+		description: 'Revele todas as 22 casas seguras com 3 minas e saque'
+	},
+	tower_god: {
+		name: 'Deus da Torre',
+		description: 'Chegue ao andar 10 no modo difícil e saque (aposta mínima de $10)'
+	},
+	blackjack_21: {
+		name: 'Exatamente 21',
+		description: 'Vença o blackjack chegando a 21'
+	},
+	arcade_100: {
+		name: 'Degen',
+		description: 'Jogue 100 jogos de arcade'
+	},
+	arcade_wager_100k: {
+		name: 'Apostador de Alto Nível',
+		description: 'Aposte $100.000 ou mais no total em jogos de arcade'
+	},
+	arcade_losses_50k: {
+		name: 'A Casa Sempre Vence',
+		description: 'Perda $50.000 ou mais no total no arcade'
+	},
+	win_streak_5: {
+		name: 'Sequência de Sorte',
+		description: 'Vença 5 jogos de arcade em sequência'
+	},
+	arcade_wins_500k: {
+		name: 'Jogador Profissional',
+		description: 'Ganhe $500.000 ou mais no total no arcade'
+	},
+	arcade_wins_1m: {
+		name: 'Só Vencer',
+		description: 'Faça $1.000.000 em ganhos com jogos de arcade'
+	},
+	risk_biscuit: {
+		name: 'Arrisque pelo biscoito',
+		description: 'Vá all-in com pelo menos $25.000 e vença'
+	},
+	arcade_losses_1m: {
+		name: 'Só Perder',
+		description: 'Perda $1.000.000 em jogos de arcade'
+	},
+	first_claim: {
+		name: 'Madrugador',
+		description: 'Resgate sua primeira recompensa diária'
+	},
+	streak_7: {
+		name: 'Dedicado',
+		description: 'Alcance uma sequência de login de 7 dias'
+	},
+	streak_14: {
+		name: 'Comprometido',
+		description: 'Alcance uma sequência de login de 14 dias'
+	},
+	streak_30: {
+		name: 'Obcecado',
+		description: 'Alcance uma sequência de login de 30 dias'
+	},
+	rewards_100k: {
+		name: 'Colecionador de Recompensas',
+		description: 'Resgate $100.000 no total em recompensas diárias'
+	},
+	prestige_1: {
+		name: 'Botão de Reset',
+		description: 'Faça prestige pela primeira vez'
+	},
+	prestige_3: {
+		name: 'Modo Trampo',
+		description: 'Alcance Prestige III'
+	},
+	prestige_5: {
+		name: 'Ascendido',
+		description: 'Alcance Prestige V'
+	},
+	prestige_7: {
+		name: 'Ascendido',
+		description: 'Alcance Prestige VII (prestígio máximo)'
+	},
+	first_bet: {
+		name: 'Bola de Cristal',
+		description: 'Faça sua primeira aposta no Hopium'
+	},
+	create_10_questions: {
+		name: 'Mestre das Perguntas',
+		description: 'Crie 10 perguntas de Hopium'
+	},
+	win_10_bets: {
+		name: 'Oráculo',
+		description: 'Vença 10 apostas de Hopium'
+	},
+	win_50_bets: {
+		name: 'Profeta',
+		description: 'Vença 50 apostas de Hopium'
+	},
+	comments_25: {
+		name: 'Socialite',
+		description: 'Publique 25 comentários nas páginas de moedas'
+	},
+	comments_50: {
+		name: 'Tagarela',
+		description: 'Escreva 50 comentários no total'
+	},
+	top_rugpuller: {
+		name: 'Maior Rugpuller',
+		description: 'Seja o #1 em rugpulling no placar diário'
+	},
+	transfers_10_users: {
+		name: 'Generoso',
+		description: 'Envie transferências para 10 usuários diferentes'
+	},
+	transfer_500k: {
+		name: 'Gorjeta Gigante',
+		description: 'Transfira $500.000 ou mais no total para outros usuários'
+	},
+	received_from_15: {
+		name: 'Uma celebridade?',
+		description: 'Receba dinheiro de 15 pessoas diferentes'
+	},
+	update_bio: {
+		name: 'Quem é você?',
+		description: 'Atualize sua seção Sobre mim'
+	},
+	own_5_colors: {
+		name: 'Colecionador',
+		description: 'Tenha 5 cores diferentes de nome'
+	},
+	own_10_colors: {
+		name: 'Colecionador Viciado',
+		description: 'Tenha 10 cores diferentes de nome'
+	},
+	own_15_colors: {
+		name: 'Colecionador Super Viciado',
+		description: 'Tenha 15 cores diferentes de nome'
+	},
+	open_50_crates: {
+		name: 'Viciado em Caixas',
+		description: 'Abra 50 caixas'
+	},
+	all_in: {
+		name: 'Tudo ou Nada',
+		description: 'Gaste 95% ou mais do seu saldo em uma única negociação'
+	},
+	account_6mo: {
+		name: 'Veterano',
+		description: 'Tenha uma conta com mais de 6 meses'
+	}
+} satisfies Record<string, { name: string; description: string }>;
+
 export default {
 	lang: {
 		code: 'pt',
@@ -58,6 +317,47 @@ export default {
 		title: 'Bem vindo(a) ao BooPlay!',
 		description: 'Aqui está um panorama do mercado para hoje.',
 		market_overview: 'Visão Geral do Mercado'
+	},
+	achievements: {
+		title: 'Conquistas',
+		seo_description:
+			'Acompanhe seu progresso e desbloqueie conquistas no simulador de trading cripto BooPlay. Complete desafios para ganhar recompensas.',
+		seo_keywords: 'conquistas de jogo cripto, desafios de simulador de trading, recompensas virtuais de trading',
+		loading: 'Carregando...',
+		claimed_summary: '{{claimed}} / {{total}} conquistadas',
+		claim_all: 'Resgatar todas ({{count}})',
+		claiming_all: 'Resgatando...',
+		claim: 'Resgatar',
+		claiming: 'Resgatando...',
+		reward_claimed: 'Recompensa resgatada!',
+		claimed_all_success: '{{count}} conquistas resgatadas!',
+		reward_description: '+{{cash}} em dinheiro, +{{gems}} gemas',
+		errors: {
+			load: 'Falha ao carregar conquistas',
+			claim: 'Falha ao resgatar conquista',
+			claim_all: 'Falha ao resgatar conquistas'
+		},
+		no_category: 'Nenhuma conquista nesta categoria',
+		categories: {
+			all: 'Todas',
+			trading: 'Trading',
+			wealth: 'Riqueza',
+			creation: 'Criação de Moedas',
+			arcade: 'Arcade',
+			streaks: 'Recompensas Diárias e Sequências',
+			prestige: 'Prestígio',
+			hopium: 'Hopium',
+			social: 'Social',
+			shop: 'Loja e Cosméticos',
+			special: 'Especial'
+		},
+		difficulties: {
+			easy: 'Fácil',
+			medium: 'Médio',
+			hard: 'Difícil',
+			legendary: 'Lendário'
+		},
+		items: achievementItems
 	},
 	lottery: {
 		title: 'Loteria',

@@ -1,4 +1,8 @@
-import type { lotteryDraw } from '$lib/server/db/schema';
+import { ACHIEVEMENTS } from '$lib/data/achievements';
+
+const achievementItems = Object.fromEntries(
+	ACHIEVEMENTS.map((achievement) => [achievement.id, { name: achievement.name, description: achievement.description }])
+);
 
 export default {
 	lang: {
@@ -58,6 +62,47 @@ export default {
 		title: 'Welcome to BooPlay!',
 		description: "Here's the market overview for today.",
 		market_overview: 'Market Overview'
+	},
+	achievements: {
+		title: 'Achievements',
+		seo_description:
+			'Track your progress and unlock achievements in the BooPlay crypto trading simulator. Complete challenges to earn rewards.',
+		seo_keywords: 'crypto game achievements, trading simulator challenges, virtual trading rewards',
+		loading: 'Loading...',
+		claimed_summary: '{{claimed}} / {{total}} claimed',
+		claim_all: 'Claim All ({{count}})',
+		claiming_all: 'Claiming...',
+		claim: 'Claim',
+		claiming: 'Claiming...',
+		reward_claimed: 'Reward claimed!',
+		claimed_all_success: 'Claimed {{count}} achievements!',
+		reward_description: '+{{cash}} cash, +{{gems}} gems',
+		errors: {
+			load: 'Failed to load achievements',
+			claim: 'Failed to claim achievement',
+			claim_all: 'Failed to claim achievements'
+		},
+		no_category: 'No achievements in this category',
+		categories: {
+			all: 'All',
+			trading: 'Trading',
+			wealth: 'Wealth',
+			creation: 'Coin Creation',
+			arcade: 'Arcade',
+			streaks: 'Daily Rewards & Streaks',
+			prestige: 'Prestige',
+			hopium: 'Hopium',
+			social: 'Social',
+			shop: 'Shop & Cosmetics',
+			special: 'Special'
+		},
+		difficulties: {
+			easy: 'Easy',
+			medium: 'Medium',
+			hard: 'Hard',
+			legendary: 'Legendary'
+		},
+		items: achievementItems
 	},
 	lottery: {
 		title: 'Lottery',
