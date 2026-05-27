@@ -9,6 +9,7 @@
 	} from '@hugeicons/core-free-icons';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { onMount } from 'svelte';
+	import { _ } from 'svelte-i18n';
 	import { goto } from '$app/navigation';
 	import SEO from '$lib/components/self/SEO.svelte';
 	import { Badge } from '$lib/components/ui/badge';
@@ -217,9 +218,9 @@
 </script>
 
 <SEO
-	title="Treemap - BooPlay"
-	description="Interactive virtual cryptocurrency market treemap visualization. View simulated market cap and 24h price changes for all coins in our trading game's visual treemap format."
-	keywords="virtual cryptocurrency treemap, market visualization game, crypto market cap simulation, price changes game, market analysis simulator"
+	title="{$_('treemap.title')} - BooPlay"
+	description={$_('treemap.seo_description')}
+	keywords={$_('treemap.seo_keywords')}
 />
 
 <div
@@ -231,7 +232,7 @@
 			<div class="mb-2 flex items-center justify-between">
 				<div class="flex items-center gap-3">
 					<HugeiconsIcon icon={Analytics01Icon} class="h-6 w-6" />
-					<h1 class="text-2xl font-bold">Market Treemap</h1>
+					<h1 class="text-2xl font-bold">{$_('treemap.title')}</h1>
 				</div>
 				<div class="flex items-center gap-2">
 					<Button
@@ -244,30 +245,29 @@
 					>
 						{#if isLiveUpdatesEnabled}
 							<HugeiconsIcon icon={Activity01Icon} class="h-4 w-4" />
-							Live
+							{$_('treemap.live')}
 						{:else}
 							<HugeiconsIcon icon={Activity01Icon} class="h-4 w-4" />
-							Paused
+							{$_('treemap.paused')}
 						{/if}
 					</Button>
 					<Button variant="outline" size="sm" onclick={toggleFullscreen}>
 						{#if isFullscreen}
 							<HugeiconsIcon icon={FullScreenIcon} class="h-4 w-4" />
-							Exit Fullscreen
+							{$_('treemap.exit_fullscreen')}
 						{:else}
 							<HugeiconsIcon icon={FullScreenIcon} class="h-4 w-4" />
-							Fullscreen
+							{$_('treemap.fullscreen')}
 						{/if}
 					</Button>
 				</div>
 			</div>
 			<p class="text-muted-foreground">
-				Visual representation of the cryptocurrency market. Size indicates market cap, color shows
-				24h price change.
+				{$_('treemap.description')}
 			</p>
 			{#if coins.length > 0}
 				<p class="text-muted-foreground mt-1 text-sm">
-					Last updated: {lastUpdated.toLocaleTimeString()}
+					{$_('treemap.last_updated').replace("{{time}}", lastUpdated.toLocaleTimeString())}
 				</p>
 			{/if}
 		</div>
@@ -292,10 +292,10 @@
 				<Card.Content class="p-8 text-center">
 					<div class="text-muted-foreground mb-4">
 						<HugeiconsIcon icon={ChartColumnIcon} class="mx-auto mb-2 h-12 w-12 opacity-50" />
-						<p class="text-lg font-medium">Failed to load treemap</p>
+						<p class="text-lg font-medium">{$_('treemap.failed_to_load')}</p>
 						<p class="text-sm">{error}</p>
 					</div>
-					<Button onclick={fetchCoins}>Try Again</Button>
+					<Button onclick={fetchCoins}>{$_('global.try_again')}</Button>
 				</Card.Content>
 			</Card.Root>
 		{:else if coins.length === 0}
@@ -303,8 +303,8 @@
 				<Card.Content class="p-8 text-center">
 					<div class="text-muted-foreground">
 						<HugeiconsIcon icon={ChartColumnIcon} class="mx-auto mb-2 h-12 w-12 opacity-50" />
-						<p class="text-lg font-medium">No coins available</p>
-						<p class="text-sm">Create some coins to see the treemap visualization.</p>
+						<p class="text-lg font-medium">{$_('treemap.no_coins')}</p>
+						<p class="text-sm">{$_('treemap.no_coins_description')}</p>
 					</div>
 				</Card.Content>
 			</Card.Root>
@@ -314,14 +314,14 @@
 					<div class="text-muted-foreground mb-4 flex flex-wrap gap-4 text-sm">
 						<div class="flex items-center gap-2">
 							<div class="h-3 w-3 rounded bg-green-500"></div>
-							<span>Positive 24h change</span>
+							<span>{$_('treemap.positive_change')}</span>
 						</div>
 						<div class="flex items-center gap-2">
 							<div class="h-3 w-3 rounded bg-red-500"></div>
-							<span>Negative 24h change</span>
+							<span>{$_('treemap.negative_change')}</span>
 						</div>
 						<Badge variant="outline" class="ml-auto">
-							{coins.length} coins
+							{$_('treemap.coins_count').replace("{{count}}", coins.length.toString())}
 						</Badge>
 					</div>
 					<div use:chart={treemapOptions}></div>

@@ -591,6 +591,25 @@ export default {
 			delete_failed: 'Failed to delete account: {{error}}'
 		}
 	},
+	treemap: {
+		title: 'Market Treemap',
+		description: 'Visual representation of the cryptocurrency market. Size indicates market cap, color shows 24h price change.',
+		seo_description:
+			'Interactive virtual cryptocurrency market treemap visualization. View simulated market cap and 24h price changes for all coins in our trading game\'s visual treemap format.',
+		seo_keywords:
+			'virtual cryptocurrency treemap, market visualization game, crypto market cap simulation, price changes game, market analysis simulator',
+		live: 'Live',
+		paused: 'Paused',
+		exit_fullscreen: 'Exit Fullscreen',
+		fullscreen: 'Fullscreen',
+		last_updated: 'Last updated: {{time}}',
+		positive_change: 'Positive 24h change',
+		negative_change: 'Negative 24h change',
+		coins_count: '{{count}} coins',
+		failed_to_load: 'Failed to load treemap',
+		no_coins: 'No coins available',
+		no_coins_description: 'Create some coins to see the treemap visualization.'
+	},
 	about: {
 		title: 'About',
 		seo_description:

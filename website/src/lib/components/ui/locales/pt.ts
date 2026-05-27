@@ -856,6 +856,25 @@ export default {
 			delete_failed: 'Falha ao deletar conta: {{error}}'
 		}
 	},
+	treemap: {
+		title: 'Treemap do Mercado',
+		description: 'Representação visual do mercado de criptomoedas. O tamanho indica a capitalização de mercado, a cor mostra a mudança de preço em 24h.',
+		seo_description:
+			'Visualização interativa do treemap do mercado de criptomoedas virtuais. Visualize a capitalização de mercado simulada e as mudanças de preço em 24h para todas as moedas no formato treemap visual do nosso jogo de trading.',
+		seo_keywords:
+			'treemap de criptomoedas virtuais, visualização de mercado em jogo, simulação de capitalização de mercado cripto, jogo de mudanças de preço, simulador de análise de mercado',
+		live: 'Ao Vivo',
+		paused: 'Pausado',
+		exit_fullscreen: 'Sair da Tela Cheia',
+		fullscreen: 'Tela Cheia',
+		last_updated: 'Última atualização: {{time}}',
+		positive_change: 'Mudança positiva em 24h',
+		negative_change: 'Mudança negativa em 24h',
+		coins_count: '{{count}} moedas',
+		failed_to_load: 'Falha ao carregar o treemap',
+		no_coins: 'Nenhuma moeda disponível',
+		no_coins_description: 'Crie algumas moedas para ver a visualização treemap.'
+	},
 	about: {
 		title: 'Sobre',
 		seo_description:
