@@ -590,5 +590,48 @@ export default {
 				'You have already requested account deletion. Contact support to cancel.',
 			delete_failed: 'Failed to delete account: {{error}}'
 		}
+	},
+	about: {
+		title: 'About',
+		seo_description:
+			'Learn about Booplay - a realistic cryptocurrency trading simulation focusing on DeFi risks and mechanics.',
+		seo_keywords:
+			'crypto trading simulator, DeFi simulation, virtual trading, trading game, cryptocurrency education',
+		subtitle: 'A crypto trading simulator where you can practice trading without losing real money. Create coins, trade them, and rug pull!',
+		user_manual_button: 'User Manual',
+		about_booplay: {
+			title: 'About BooPlay',
+			description_p1:
+				'BooPlay is a realistic cryptocurrency trading simulation that focuses on DeFi (Decentralized Finance) mechanics and the inherent risks of decentralized trading.',
+			description_p2:
+				'Practice trading strategies, create your own coins, and learn about market dynamics without any real financial risk. Experience AMM trading, liquidity pools, and even rug pulls. (duh)',
+			description_p3: 'Join the community of degenerates where paranoia is profitable!'
+		},
+		features: {
+			title: 'Features',
+			create_coins: 'Create coins',
+			buy_coins: 'Buy coins',
+			sell_coins: 'Sell coins',
+			predict: 'Predict on questions (similar to Polymarket)',
+			arcade: 'Play arcade games',
+			treemap: 'View a Treemap graph of the entire market',
+			leaderboard: 'Compete on leaderboards'
+		},
+		credits: {
+			title: 'Credits',
+			rugplay: 'Rugplay Created by <strong>FaceDev</strong>',
+			xprismplay: 'XprismPlay Maintened by <strong>Xprism</strong>',
+			booplay: 'BooPlay Maintened by <strong>Boongie</strong>',
+			rugplay_github: "Rugplay's GitHub",
+			xprismplay_github: "XPrismPlay's GitHub",
+			our_github: 'Our GitHub',
+			github_url_rugplay: 'https://github.com/outpoot/booplay',
+			github_url_xprismplay: 'https://github.com/xprismplay/XPrismPlay',
+			github_url_booplay: 'https://github.com/1boongie/BooPlay',
+			our_discord: 'Our Discord',
+			discord_url: 'https://discord.gg/JGT4JJv5M7',
+			icons_credit: 'Achievement icons by <a href="https://twitter.com/gvesster" target="_blank" rel="noopener" class="text-primary underline">gvstr</a>',
+			animations_credit: 'Chest animations by <a href="https://admurin.itch.io/" target="_blank" rel="noopener" class="text-primary underline">admurin</a>'
+		}
 	}
 };

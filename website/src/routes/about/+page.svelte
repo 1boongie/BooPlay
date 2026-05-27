@@ -8,6 +8,7 @@
 		UserIcon
 	} from '@hugeicons/core-free-icons';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import { _ } from 'svelte-i18n';
 	import UserManualModal from '$lib/components/self/UserManualModal.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
@@ -21,11 +22,9 @@
 <UserManualModal bind:open={showUserManual} />
 
 <svelte:head>
-	<title>About - BooPlay</title>
-	<meta
-		name="description"
-		content="Learn about Booplay - a realistic cryptocurrency trading simulation focusing on DeFi risks and mechanics."
-	/>
+	<title>{$_('about.title')} - BooPlay</title>
+	<meta name="description" content={$_('about.seo_description')} />
+	<meta name="keywords" content={$_('about.seo_keywords')} />
 </svelte:head>
 
 <div class="container mx-auto space-y-8 px-4 py-8">
@@ -35,13 +34,12 @@
 			<h1 class="text-4xl font-bold">BooPlay</h1>
 		</div>
 		<p class="text-muted-foreground mx-auto max-w-2xl text-lg">
-			A crypto trading simulator where you can practice trading without losing real money. Create
-			coins, trade them, and rug pull!
+			{$_('about.subtitle')}
 		</p>
 		<div class="flex flex-wrap justify-center gap-4">
 			<Button onclick={handleManual} size="lg">
 				<HugeiconsIcon icon={BookOpen01Icon} class="h-4 w-4" />
-				User Manual
+				{$_('about.user_manual_button')}
 			</Button>
 		</div>
 	</div>
@@ -51,22 +49,19 @@
 			<CardHeader>
 				<CardTitle class="flex items-center gap-2">
 					<HugeiconsIcon icon={Coins01Icon} class="text-primary h-5 w-5" />
-					About BooPlay
+					{$_('about.about_booplay.title')}
 				</CardTitle>
 			</CardHeader>
 			<CardContent>
 				<div class="space-y-3">
 					<p class="text-muted-foreground text-sm">
-						BooPlay is a realistic cryptocurrency trading simulation that focuses on DeFi
-						(Decentralized Finance) mechanics and the inherent risks of decentralized trading.
+						{$_('about.about_booplay.description_p1')}
 					</p>
 					<p class="text-muted-foreground text-sm">
-						Practice trading strategies, create your own coins, and learn about market dynamics
-						without any real financial risk. Experience AMM trading, liquidity pools, and even rug
-						pulls. (duh)
+						{$_('about.about_booplay.description_p2')}
 					</p>
 					<p class="text-muted-foreground text-sm">
-						Join the community of degenerates where paranoia is profitable!
+						{$_('about.about_booplay.description_p3')}
 					</p>
 				</div>
 			</CardContent>
@@ -76,38 +71,38 @@
 			<CardHeader>
 				<CardTitle class="flex items-center gap-2">
 					<HugeiconsIcon icon={TradeUpIcon} class="text-primary h-5 w-5" />
-					Features
+					{$_('about.features.title')}
 				</CardTitle>
 			</CardHeader>
 			<CardContent>
 				<div class="space-y-2">
 					<div class="flex items-center gap-2 text-sm">
 						<span>🪙</span>
-						<span>Create coins</span>
+						<span>{$_('about.features.create_coins')}</span>
 					</div>
 					<div class="flex items-center gap-2 text-sm">
 						<span>🟢</span>
-						<span>Buy coins</span>
+						<span>{$_('about.features.buy_coins')}</span>
 					</div>
 					<div class="flex items-center gap-2 text-sm">
 						<span>🔴</span>
-						<span>Sell coins</span>
+						<span>{$_('about.features.sell_coins')}</span>
 					</div>
 					<div class="flex items-center gap-2 text-sm">
 						<span>⚖️</span>
-						<span>Predict on questions (similar to Polymarket)</span>
+						<span>{$_('about.features.predict')}</span>
 					</div>
 					<div class="flex items-center gap-2 text-sm">
 						<span>🎲</span>
-						<span>Play arcade games</span>
+						<span>{$_('about.features.arcade')}</span>
 					</div>
 					<div class="flex items-center gap-2 text-sm">
 						<span>📊</span>
-						<span>View a Treemap graph of the entire market</span>
+						<span>{$_('about.features.treemap')}</span>
 					</div>
 					<div class="flex items-center gap-2 text-sm">
 						<span>🏆</span>
-						<span>Compete on leaderboards</span>
+						<span>{$_('about.features.leaderboard')}</span>
 					</div>
 				</div>
 			</CardContent>
@@ -117,73 +112,61 @@
 			<CardHeader>
 				<CardTitle class="flex items-center gap-2">
 					<HugeiconsIcon icon={UserIcon} class="text-primary h-5 w-5" />
-					Credits
+					{$_('about.credits.title')}
 				</CardTitle>
 			</CardHeader>
 			<CardContent>
 				<div class="space-y-4">
-					<p class="text-muted-foreground text-sm">Rugplay Created by <strong>FaceDev</strong></p>
-					<p class="text-muted-foreground text-sm">
-						XprismPlay Maintened by <strong>Xprism</strong>
-					</p>
-					<p class="text-muted-foreground text-sm">BooPlay Maintened by <strong>Boongie</strong></p>
+					<p class="text-muted-foreground text-sm">{@html $_('about.credits.rugplay')}</p>
+					<p class="text-muted-foreground text-sm">{@html $_('about.credits.xprismplay')}</p>
+					<p class="text-muted-foreground text-sm">{@html $_('about.credits.booplay')}</p>
 					<div class="flex flex-wrap gap-2">
 						<Button
 							variant="outline"
 							size="sm"
-							href="https://github.com/outpoot/booplay"
+							href={$_('about.credits.github_url_rugplay')}
 							target="_blank"
 							rel="noopener"
 						>
 							<HugeiconsIcon icon={GithubIcon} class="h-4 w-4" />
-							Rugplay's GitHub
+							{$_('about.credits.rugplay_github')}
 						</Button>
 						<Button
 							variant="outline"
 							size="sm"
-							href="https://github.com/xprismplay/XPrismPlay"
+							href={$_('about.credits.github_url_xprismplay')}
 							target="_blank"
 							rel="noopener"
 						>
 							<HugeiconsIcon icon={GithubIcon} class="h-4 w-4" />
-							XPrismPlay's GitHub
+							{$_('about.credits.xprismplay_github')}
 						</Button>
 						<Button
 							variant="outline"
 							size="sm"
-							href="https://github.com/1boongie/BooPlay"
+							href={$_('about.credits.github_url_booplay')}
 							target="_blank"
 							rel="noopener"
 						>
 							<HugeiconsIcon icon={GithubIcon} class="h-4 w-4" />
-							Our GitHub
+							{$_('about.credits.our_github')}
 						</Button>
 						<Button
 							variant="outline"
 							size="sm"
-							href="https://discord.gg/JGT4JJv5M7"
+							href={$_('about.credits.discord_url')}
 							target="_blank"
 							rel="noopener"
 						>
 							<HugeiconsIcon icon={DiscordIcon} class="h-4 w-4" />
-							Our Discord
+							{$_('about.credits.our_discord')}
 						</Button>
 					</div>
 					<p class="text-muted-foreground text-sm">
-						Achievement icons by <a
-							href="https://twitter.com/gvesster"
-							target="_blank"
-							rel="noopener"
-							class="text-primary underline">gvstr</a
-						>
+						{@html $_('about.credits.icons_credit')}
 					</p>
 					<p class="text-muted-foreground text-sm">
-						Chest animations by <a
-							href="https://admurin.itch.io/"
-							target="_blank"
-							rel="noopener"
-							class="text-primary underline">admurin</a
-						>
+						{@html $_('about.credits.animations_credit')}
 					</p>
 				</div>
 			</CardContent>

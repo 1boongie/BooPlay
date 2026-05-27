@@ -855,5 +855,48 @@ export default {
 				'Você já solicitou a exclusão da conta. Entre em contato com o suporte para cancelar.',
 			delete_failed: 'Falha ao deletar conta: {{error}}'
 		}
+	},
+	about: {
+		title: 'Sobre',
+		seo_description:
+			'Saiba mais sobre o Booplay - uma simulação realista de negociação de criptomoedas focando em riscos e mecânicas DeFi.',
+		seo_keywords:
+			'simulador de trading cripto, simulação DeFi, trading virtual, jogo de trading, educação em criptomoedas',
+		subtitle: 'Um simulador de trading cripto onde você pode praticar negociações sem perder dinheiro real. Crie moedas, negocie-as, e faça rug pulls!',
+		user_manual_button: 'Manual do Usuário',
+		about_booplay: {
+			title: 'Sobre o BooPlay',
+			description_p1:
+				'BooPlay é uma simulação realista de negociação de criptomoedas que foca em mecânicas DeFi (Finanças Descentralizadas) e nos riscos inerentes à negociação descentralizada.',
+			description_p2:
+				'Pratique estratégias de trading, crie suas próprias moedas, e aprenda sobre dinâmica de mercado sem qualquer risco financeiro real. Experimente negociação AMM, pools de liquidez, e até rug pulls. (é claro)',
+			description_p3: 'Junte-se à comunidade de degenerados onde a paranoia é lucrativa!'
+		},
+		features: {
+			title: 'Funcionalidades',
+			create_coins: 'Criar moedas',
+			buy_coins: 'Comprar moedas',
+			sell_coins: 'Vender moedas',
+			predict: 'Prever em perguntas (similar ao Polymarket)',
+			arcade: 'Jogar jogos de arcade',
+			treemap: 'Ver um gráfico Treemap de todo o mercado',
+			leaderboard: 'Competir em placares'
+		},
+		credits: {
+			title: 'Créditos',
+			rugplay: 'Rugplay Criado por <strong>FaceDev</strong>',
+			xprismplay: 'XprismPlay Mantido por <strong>Xprism</strong>',
+			booplay: 'BooPlay Mantido por <strong>Boongie</strong>',
+			rugplay_github: 'GitHub do Rugplay',
+			xprismplay_github: 'GitHub do XPrismPlay',
+			our_github: 'Nosso GitHub',
+			github_url_rugplay: 'https://github.com/outpoot/booplay',
+			github_url_xprismplay: 'https://github.com/xprismplay/XPrismPlay',
+			github_url_booplay: 'https://github.com/1boongie/BooPlay',
+			our_discord: 'Nosso Discord',
+			discord_url: 'https://discord.gg/JGT4JJv5M7',
+			icons_credit: 'Ícones de conquistas por <a href="https://twitter.com/gvesster" target="_blank" rel="noopener" class="text-primary underline">gvstr</a>',
+			animations_credit: 'Animações de baús por <a href="https://admurin.itch.io/" target="_blank" rel="noopener" class="text-primary underline">admurin</a>'
+		}
 	}
 } satisfies typeof en;
